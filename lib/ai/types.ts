@@ -1,6 +1,6 @@
 import type { z } from 'zod'
 
-export type AiProvider = 'gemini' | 'nvidia'
+export type AiProvider = 'gemini' | 'nvidia' | 'openai'
 
 export interface AiTarget {
   provider: AiProvider

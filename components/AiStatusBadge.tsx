@@ -54,6 +54,14 @@ export function AiStatusBadge() {
       if (target.model.includes('llama-3.1')) return 'AI: NVIDIA Llama 3.1'
       return `AI: NVIDIA (${target.model})`
     }
+    if (target.provider === 'openai') {
+      if (target.model.includes('gpt-4o-mini')) return 'AI: OpenAI GPT-4o Mini'
+      if (target.model.includes('gpt-4o')) return 'AI: OpenAI GPT-4o'
+      if (target.model.includes('gpt-3.5')) return 'AI: OpenAI GPT-3.5'
+      if (target.model.includes('o3-mini')) return 'AI: OpenAI o3-mini'
+      if (target.model.includes('o1')) return 'AI: OpenAI o1'
+      return `AI: OpenAI (${target.model})`
+    }
     return `AI: ${target.model}`
   }
 
@@ -88,7 +96,7 @@ export function AiStatusBadge() {
             Multi-Provider AI Failover
           </p>
           <p className="mt-1 text-zinc-600 dark:text-zinc-400 leading-relaxed">
-            Sistem otomatis berpindah antar model Google Gemini dan NVIDIA NIM saat kuota (RPM/RPD) habis atau provider mengalami gangguan.
+            Sistem otomatis berpindah antar model Google Gemini, NVIDIA NIM, dan OpenAI saat kuota (RPM/RPD) habis atau provider mengalami gangguan.
           </p>
           {status?.coolingDown && status.coolingDown.length > 0 && (
             <div className="mt-2 border-t border-zinc-100 pt-2 dark:border-zinc-800">

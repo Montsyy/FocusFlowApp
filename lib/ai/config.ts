@@ -6,6 +6,8 @@ export interface AiConfig {
   geminiKeys: string[]
   nvidiaKeys: string[]
   nvidiaBaseUrl: string
+  openaiKeys: string[]
+  openaiBaseUrl: string
   attemptTimeoutMs: number
   totalBudgetMs: number
   cooldownRpmMs: number
@@ -14,7 +16,7 @@ export interface AiConfig {
 }
 
 const targetSchema = z.object({
-  provider: z.enum(['gemini', 'nvidia']),
+  provider: z.enum(['gemini', 'nvidia', 'openai']),
   model: z.string().min(1),
 })
 
@@ -65,6 +67,14 @@ export function getAiConfig(envOverride?: Record<string, string | undefined>): A
   const nvidiaBaseUrl =
     env.NVIDIA_BASE_URL?.trim() || 'https://integrate.api.nvidia.com/v1'
 
+  let openaiKeys = parseKeys(env.OPENAI_API_KEYS)
+  if (openaiKeys.length === 0 && env.OPENAI_API_KEY) {
+    openaiKeys = [env.OPENAI_API_KEY.trim()]
+  }
+
+  const openaiBaseUrl =
+    env.OPENAI_BASE_URL?.trim() || 'https://api.openai.com/v1'
+
   const attemptTimeoutMs = env.AI_ATTEMPT_TIMEOUT_MS
     ? parseInt(env.AI_ATTEMPT_TIMEOUT_MS, 10)
     : 5000
@@ -88,6 +98,8 @@ export function getAiConfig(envOverride?: Record<string, string | undefined>): A
     geminiKeys,
     nvidiaKeys,
     nvidiaBaseUrl,
+    openaiKeys,
+    openaiBaseUrl,
     attemptTimeoutMs: isNaN(attemptTimeoutMs) ? 5000 : attemptTimeoutMs,
     totalBudgetMs: isNaN(totalBudgetMs) ? 15000 : totalBudgetMs,
     cooldownRpmMs: isNaN(cooldownRpmMs) ? 60000 : cooldownRpmMs,

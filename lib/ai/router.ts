@@ -8,6 +8,7 @@ import {
 import { extractJson } from './json'
 import { callGemini } from './providers/gemini'
 import { callNvidia } from './providers/nvidia'
+import { callOpenAi } from './providers/openai'
 import {
   AllProvidersFailedError,
   AuthError,
@@ -49,7 +50,11 @@ export async function generateStructured<T>(
   const config = options.config ?? getAiConfig()
   const clock = options.clock ?? (() => Date.now())
 
-  const allKeys = [...config.geminiKeys, ...config.nvidiaKeys]
+  const allKeys = [
+    ...config.geminiKeys,
+    ...config.nvidiaKeys,
+    ...config.openaiKeys,
+  ]
 
   if (config.demoFallback) {
     throw new AllProvidersFailedError(
@@ -65,7 +70,12 @@ export async function generateStructured<T>(
 
   const allCandidates: Candidate[] = []
   for (const target of config.targets) {
-    const keys = target.provider === 'gemini' ? config.geminiKeys : config.nvidiaKeys
+    const keys =
+      target.provider === 'gemini'
+        ? config.geminiKeys
+        : target.provider === 'nvidia'
+        ? config.nvidiaKeys
+        : config.openaiKeys
     for (let i = 0; i < keys.length; i++) {
       allCandidates.push({
         target,
@@ -142,12 +152,22 @@ export async function generateStructured<T>(
         )
       }
 
-      return callNvidia(
+      if (candidate.target.provider === 'nvidia') {
+        return callNvidia(
+          candidate.target.model,
+          candidate.key,
+          requestWithPrompt,
+          controller.signal,
+          config.nvidiaBaseUrl
+        )
+      }
+
+      return callOpenAi(
         candidate.target.model,
         candidate.key,
         requestWithPrompt,
         controller.signal,
-        config.nvidiaBaseUrl
+        config.openaiBaseUrl
       )
     }
 
@@ -193,12 +213,20 @@ export async function generateStructured<T>(
                     { ...req, prompt: repairPrompt },
                     repairController.signal
                   )
-                : await callNvidia(
+                : candidate.target.provider === 'nvidia'
+                ? await callNvidia(
                     candidate.target.model,
                     candidate.key,
                     { ...req, prompt: repairPrompt },
                     repairController.signal,
                     config.nvidiaBaseUrl
+                  )
+                : await callOpenAi(
+                    candidate.target.model,
+                    candidate.key,
+                    { ...req, prompt: repairPrompt },
+                    repairController.signal,
+                    config.openaiBaseUrl
                   )
 
             const repairJson = extractJson(repairOutput)
