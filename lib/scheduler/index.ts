@@ -278,7 +278,54 @@ export function schedule(input: SchedulerInput): SchedulerOutput {
         return true
       })
 
-      if (candidateSlots.length === 0) {
+      let finalCandidateSlots = candidateSlots
+      if (finalCandidateSlots.length === 0 && sessionDuration <= 360) {
+        finalCandidateSlots = grid.filter((slot) => {
+          const start = slot.start
+          const end = new Date(start.getTime() + sessionDuration * 60000)
+          const dayIdx = slot.dayIndex
+
+          if (start.getTime() < nowDate.getTime()) {
+            return false
+          }
+
+          const dayEnd = new Date(
+            weekStartDate.getTime() +
+              dayIdx * 86400000 +
+              activeHoursEndMinutes * 60000
+          )
+          if (end.getTime() > dayEnd.getTime()) {
+            return false
+          }
+
+          if (task.deadline) {
+            const deadlineTime = new Date(task.deadline).getTime()
+            if (end.getTime() > deadlineTime) {
+              return false
+            }
+          }
+
+          if (
+            staticBlockedIntervals.some((bi) =>
+              isIntervalOverlapping(start, end, bi.start, bi.end)
+            )
+          ) {
+            return false
+          }
+
+          if (
+            currentBlockIntervals.some((bi) =>
+              hasBufferViolation(start, end, bi.start, bi.end, 10)
+            )
+          ) {
+            return false
+          }
+
+          return true
+        })
+      }
+
+      if (finalCandidateSlots.length === 0) {
         canFitAllSessions = false
         const reason = determineUnplacedReason(
           task,
@@ -293,14 +340,14 @@ export function schedule(input: SchedulerInput): SchedulerOutput {
       }
 
       const isHardTask = (task.kesulitan ?? 3) >= 4
-      candidateSlots.sort((a, b) => {
+      finalCandidateSlots.sort((a, b) => {
         if (isHardTask && b.energyScore !== a.energyScore) {
           return b.energyScore - a.energyScore
         }
         return a.start.getTime() - b.start.getTime()
       })
 
-      const chosenSlot = candidateSlots[0]
+      const chosenSlot = finalCandidateSlots[0]
       if (!chosenSlot) {
         canFitAllSessions = false
         unplaced.push({ task, reason: 'tidak muat' })

@@ -133,15 +133,14 @@ function DashboardContentInner({ userNama, userEmail }: DashboardShellProps) {
         const count = data.blocks.length
         const unplacedCount = data.unplaced?.length ?? 0
         if (!options.silent) {
-          if (unplacedCount > 0) {
-            showToast(
-              `${count} blok terjadwal di kalender (${unplacedCount} tugas di luar batas jam belajar).`,
-              'info'
-            )
-          } else if (options.customSuccessMessage) {
+          if (options.customSuccessMessage) {
             showToast(options.customSuccessMessage, 'success')
-          } else {
+          } else if (count > 0) {
             showToast(`${count} blok tugas berhasil dijadwalkan ke kalender! 🎉`, 'success')
+          } else if (unplacedCount > 0) {
+            showToast('Tugas belum dapat dijadwalkan karena melewati batas deadline.', 'info')
+          } else {
+            showToast('Semua jadwal sudah tersinkronisasi.', 'info')
           }
         }
       }

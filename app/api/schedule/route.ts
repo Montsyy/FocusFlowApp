@@ -21,12 +21,11 @@ export async function POST(req: Request) {
 
     const today = new Date()
     const currentDay = today.getDay()
-    const diffToMonday = currentDay === 0 ? -6 : 1 - currentDay
-    const monday = new Date(today)
-    monday.setDate(today.getDate() + diffToMonday)
-    monday.setHours(0, 0, 0, 0)
+    const sunday = new Date(today)
+    sunday.setDate(today.getDate() - currentDay)
+    sunday.setHours(0, 0, 0, 0)
 
-    const weekStart = body.weekStart ? new Date(body.weekStart) : monday
+    const weekStart = body.weekStart ? new Date(body.weekStart) : sunday
 
     const [
       { data: tasksData },
@@ -46,8 +45,8 @@ export async function POST(req: Request) {
     const profile = profileData as Profile | null
 
     const activeHours = {
-      start: profile?.jam_aktif_mulai ? profile.jam_aktif_mulai.substring(0, 5) : '07:00',
-      end: profile?.jam_aktif_selesai ? profile.jam_aktif_selesai.substring(0, 5) : '22:00',
+      start: profile?.jam_aktif_mulai ? profile.jam_aktif_mulai.substring(0, 5) : '06:00',
+      end: profile?.jam_aktif_selesai ? profile.jam_aktif_selesai.substring(0, 5) : '23:30',
     }
 
     const scheduleResult = schedule({
