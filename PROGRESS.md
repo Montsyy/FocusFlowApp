@@ -5,7 +5,7 @@
 - [x] **Phase 2: Database Schema & Supabase Setup**
 - [x] **Phase 3: Authentication & Protected Routes**
 - [x] **Phase 4: Tasks and Fixed Events CRUD**
-- [ ] **Phase 5: Calendar UI & FullCalendar Integration**
+- [x] **Phase 5: Calendar UI & FullCalendar Integration**
 - [ ] **Phase 6: Fixed Events & Constraint Input**
 - [ ] **Phase 7: Deterministic Scheduling Engine**
 - [ ] **Phase 8: AI Task Parsing & Effort Estimation (Gemini Flash)**
@@ -15,6 +15,45 @@
 - [ ] **Phase 12: Weekly Reflection & Analytics**
 - [ ] **Phase 13: Supabase Keepalive & Production Resilience**
 - [ ] **Phase 14: Polishing, Testing, & Deployment Preparation**
+
+---
+
+## Log Fase 5: Calendar UI & FullCalendar Integration
+
+### Item Selesai
+1. Integrasi FullCalendar `@fullcalendar/react` dengan `timeGridPlugin`, `dayGridPlugin`, dan `interactionPlugin` pada `components/Calendar.tsx`.
+2. Konfigurasi kalender mingguan: tampilan `timeGridWeek`, locale Indonesia (`idLocale`), slot 30 menit, format waktu 24 jam (`hour12: false`), hari pertama Senin (`firstDay: 1`), dan penunjuk waktu saat ini (`nowIndicator: true`).
+3. Konversi dan render `fixed_events` mingguan sebagai recurring events dengan warna abu-abu netral (`#64748B`), non-draggable, dan penanda ikon 📌.
+4. Render blok jadwal (`schedule_blocks`) dengan diferensiasi warna visual: biru (`#3B82F6`) untuk rencana AI, hijau emerald (`#10B981`) jika dimodifikasi manusia, serta ikon gembok 🔒 jika berstatus dikunci.
+5. Navigasi mingguan kustom (`◀`, `Hari Ini`, `▶`) serta penampil judul minggu berbahasa Indonesia dari event `datesSet`.
+6. Komposisi layout dashboard 3 kolom di desktop: TaskPanel di kolom kiri (span 3), Calendar di kolom tengah (span 6), serta widget EnergyCheckin, RealityCheck, dan HumanScore di kolom kanan (span 3).
+7. Tata letak responsif untuk perangkat mobile dengan sistem tab switching yang rapi: "Tugas", "Kalender", dan "Panel & Metrik".
+8. Komponen modal drawer `components/BlockDetail.tsx` yang menampilkan judul tugas, rentang waktu, status modifikasi, dan penjelasan AI saat jadwal diklik.
+9. Helper pengujian blok jadwal sementara dibuat untuk verifikasi rendering visual dan telah dibersihkan sebelum commit.
+10. Seluruh kode sumber mematuhi aturan tanpa komentar (zero comments) dan lolos seluruh quality gate: `lint` (0 error), `typecheck` (0 error), `test` (19 test lulus), dan `build` (13 route berhasil dioptimasi).
+11. Verifikasi browser berhasil dilakukan dan terekam pada video artefak.
+
+### File yang Dibuat atau Diubah
+- `components/Calendar.tsx`
+- `components/BlockDetail.tsx`
+- `components/EnergyCheckin.tsx`
+- `components/RealityCheck.tsx`
+- `components/HumanScore.tsx`
+- `app/dashboard/DashboardShell.tsx`
+- `package.json`
+- `package-lock.json`
+- `PROGRESS.md`
+
+### Keputusan Desain / Teknis
+- Menggunakan versi seragam `@fullcalendar/react: ^6.1.15` yang kompatibel dengan plugin FullCalendar 6.x untuk menghindari error tipe `PluginInput` dan `CalendarApi`.
+- Pemisahan data event menjadi memoized array dengan pemetaan task map untuk performa rendering kalender yang optimal tanpa lag.
+- Mempertahankan layout 3 kolom pada desktop layar lebar (lg breakpoint) dan mengalihkan ke tab navigasi pada layar mobile agar tetap nyaman digunakan di perangkat berukuran kecil.
+
+### Masalah yang Diketahui (Known Issues)
+- Tidak ada isu yang belum terselesaikan pada tampilan kalender dan responsivitas.
+
+### Fase Berikutnya
+- **Phase 6: Fixed Events & Constraint Input**
 
 ---
 
