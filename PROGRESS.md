@@ -3,7 +3,7 @@
 ## Daftar Fase (Phase 1 - 14)
 - [x] **Phase 1: Project Foundation**
 - [x] **Phase 2: Database Schema & Supabase Setup**
-- [ ] **Phase 3: Authentication & Protected Routes**
+- [x] **Phase 3: Authentication & Protected Routes**
 - [ ] **Phase 4: Calendar UI & FullCalendar Integration**
 - [ ] **Phase 5: Task Management & TaskPanel UI**
 - [ ] **Phase 6: Fixed Events & Constraint Input**
@@ -15,6 +15,50 @@
 - [ ] **Phase 12: Weekly Reflection & Analytics**
 - [ ] **Phase 13: Supabase Keepalive & Production Resilience**
 - [ ] **Phase 14: Polishing, Testing, & Deployment Preparation**
+
+---
+
+## Log Fase 3: Authentication & Protected Routes
+
+### Item Selesai
+1. Pembuatan skema validasi Zod di `lib/validations/auth.ts` untuk formulir masuk (`loginSchema`) dan pendaftaran (`registerSchema`) dengan pesan validasi berbahasa Indonesia (format email valid, kata sandi minimal 8 karakter, nama minimal 2 karakter) disertai unit test lengkap di `lib/validations/auth.test.ts`.
+2. Pembuatan helper otentikasi API di `lib/supabase/auth.ts` (`getUserOrThrow` dan `getAuthenticatedUser`) yang memverifikasi sesi dengan `supabase.auth.getUser()` dan mengembalikan respons HTTP 401 saat tidak terotentikasi. Seluruh rute API (`parse-task`, `schedule`, `explain`, `reflect`, `ping`) telah diperbarui mematuhi Rule 6.
+3. Implementasi rute penukaran kode sesi di `app/auth/callback/route.ts` yang menangani redirect Google OAuth / email konfirmasi ke `/dashboard`.
+4. Implementasi `middleware.ts` untuk pembaruan sesi cookie otomatis dan pengamanan rute (mengarahkan pengguna belum login dari `/dashboard/*` ke `/login`, serta mengarahkan pengguna sudah login dari `/login` ke `/dashboard`).
+5. Pembuatan halaman masuk dan pendaftaran interaktif di `app/login/page.tsx` dengan tab toggle "Masuk" dan "Daftar", input nama lengkap, email, kata sandi, tombol Google OAuth, serta notifikasi sukses dan error berbahasa Indonesia.
+6. Pembuatan kerangka dashboard di `app/dashboard/page.tsx`, `DashboardContent.tsx`, dan `DashboardShell.tsx` dengan Suspense boundary yang kompatibel dengan Next.js Cache Components, menampilkan sapaan nama pengguna dan tombol "Keluar".
+7. Seluruh kode sumber diverifikasi bebas dari komentar (Rule 2 dipatuhi).
+8. Lolos seluruh pengujian: `lint` (0 error), `typecheck` (0 error), `test` (8 tests passed), dan `build` (13 routes compiled).
+9. Verifikasi browser berhasil dilakukan dan direkam.
+
+### File yang Dibuat atau Diubah
+- `lib/validations/auth.ts`
+- `lib/validations/auth.test.ts`
+- `lib/supabase/auth.ts`
+- `middleware.ts`
+- `app/login/page.tsx`
+- `app/auth/callback/route.ts`
+- `app/dashboard/page.tsx`
+- `app/dashboard/DashboardShell.tsx`
+- `app/dashboard/DashboardContent.tsx`
+- `app/dashboard/refleksi/page.tsx`
+- `app/dashboard/refleksi/RefleksiContent.tsx`
+- `app/api/parse-task/route.ts`
+- `app/api/schedule/route.ts`
+- `app/api/explain/route.ts`
+- `app/api/reflect/route.ts`
+- `app/api/ping/route.ts`
+- `PROGRESS.md`
+
+### Keputusan Desain / Teknis
+- Menggunakan arsitektur `<Suspense>` boundary pada halaman dashboard agar kompatibel dengan Cache Components dan Partial Prerendering (PPR) di Next.js tanpa memblokir prerender statis.
+- Menyediakan helper ganda di `lib/supabase/auth.ts`: `getUserOrThrow` untuk exception-based logic dan `getAuthenticatedUser` untuk route handler yang mengembalikan NextResponse 401 langsung.
+
+### Masalah yang Diketahui (Known Issues)
+- Untuk Google OAuth, pengguna perlu mengaktifkan Google Provider di dashboard Supabase dan menambahkan Client ID & Secret Google Cloud Console.
+
+### Fase Berikutnya
+- **Phase 4: Calendar UI & FullCalendar Integration**
 
 ---
 
@@ -31,39 +75,3 @@
 8. Seluruh file kode sumber diverifikasi bersih tanpa komentar apapun (Rule 2 dipatuhi).
 9. Lolos seluruh pengujian: `lint` (0 error), `typecheck` (0 error), `test` (3 tests passed), dan `build` (13 routes compiled).
 10. Verifikasi browser dilakukan dan direkam.
-
-### File yang Dibuat atau Diubah
-- `supabase/schema.sql`
-- `lib/types.ts`
-- `lib/supabase/client.ts`
-- `lib/supabase/server.ts`
-- `lib/supabase/client.test.ts`
-- `scripts/smoke-supabase.ts`
-- `package.json`
-- `PROGRESS.md`
-
-### Keputusan Desain / Teknis
-- Menggunakan skema modular `Database` di `lib/types.ts` untuk inferensi tipe otomatis query Supabase di masa depan.
-- Menangani nilai lingkungan kosong pada klien Supabase dengan fallback URL yang aman agar proses `build` statis Next.js tidak crash saat kredensial belum diatur di lingkungan CI.
-- Mengimplementasikan `scripts/smoke-supabase.ts` yang memberikan diagnostik informatif dalam Bahasa Indonesia jika kunci belum disetel.
-
-### Masalah yang Diketahui (Known Issues)
-- Memerlukan tindakan manusia: proyek Supabase perlu dibuat, `supabase/schema.sql` dijalankan di SQL Editor, dan kunci Supabase disalin ke `.env.local`.
-
-### Fase Berikutnya
-- **Phase 3: Authentication & Protected Routes**
-
----
-
-## Log Fase 1: Project Foundation
-
-### Item Selesai
-1. Inisialisasi proyek Next.js dengan App Router, TypeScript, Tailwind CSS, dan ESLint di root workspace tanpa direktori `src`.
-2. Instalasi seluruh dependensi produksi (`@supabase/supabase-js`, `@supabase/ssr`, `@google/generative-ai`, `zod`, `@fullcalendar/react`, `@fullcalendar/core`, `@fullcalendar/daygrid`, `@fullcalendar/timegrid`, `@fullcalendar/interaction`) dan dependensi dev (`vitest`, `@vitest/coverage-v8`, `tsx`).
-3. Pembuatan struktur folder lengkap sesuai spesifikasi arsitektur proyek dengan placeholder minimal dan bersih tanpa komentar di dalam file kode sumber.
-4. Pembuatan file `.env.example` yang memuat variabel kunci (`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `GEMINI_API_KEY`) serta konfirmasi bahwa `.gitignore` mengabaikan `.env.local`.
-5. Penambahan skrip npm terpadu: `dev`, `build`, `lint`, `typecheck`, `test`, dan `seed`.
-6. Konfigurasi Vitest dengan path alias `@/` via `vitest.config.mts`.
-7. Pembuatan halaman landing page modern dan responsif di `/` dengan tagline *"AI menyusun rencana, kamu yang memegang kendali."*, pengantar fitur, dan tombol aksi "Masuk" yang terhubung ke `/login`.
-8. Pembuatan kerangka dokumentasi `README.md` mencakup Deskripsi, Fitur, Tech Stack, Setup Lokal, Deploy, dan Struktur Proyek.
-9. Pembuatan dokumen pelacak kemajuan `PROGRESS.md`.
