@@ -1,9 +1,11 @@
+import { connection } from 'next/server'
 import { redirect } from 'next/navigation'
 import { createServerClient } from '@/lib/supabase/server'
 import type { Profile } from '@/lib/types'
 import DashboardShell from './DashboardShell'
 
 export default async function DashboardContent() {
+  await connection()
   const supabase = await createServerClient()
   const {
     data: { user },

@@ -1,8 +1,10 @@
+import { connection } from 'next/server'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { createServerClient } from '@/lib/supabase/server'
 
 export default async function RefleksiContent() {
+  await connection()
   const supabase = await createServerClient()
   const {
     data: { user },

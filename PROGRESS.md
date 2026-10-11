@@ -4,8 +4,8 @@
 - [x] **Phase 1: Project Foundation**
 - [x] **Phase 2: Database Schema & Supabase Setup**
 - [x] **Phase 3: Authentication & Protected Routes**
-- [ ] **Phase 4: Calendar UI & FullCalendar Integration**
-- [ ] **Phase 5: Task Management & TaskPanel UI**
+- [x] **Phase 4: Tasks and Fixed Events CRUD**
+- [ ] **Phase 5: Calendar UI & FullCalendar Integration**
 - [ ] **Phase 6: Fixed Events & Constraint Input**
 - [ ] **Phase 7: Deterministic Scheduling Engine**
 - [ ] **Phase 8: AI Task Parsing & Effort Estimation (Gemini Flash)**
@@ -18,60 +18,59 @@
 
 ---
 
-## Log Fase 3: Authentication & Protected Routes
+## Log Fase 4: Tasks and Fixed Events CRUD
 
 ### Item Selesai
-1. Pembuatan skema validasi Zod di `lib/validations/auth.ts` untuk formulir masuk (`loginSchema`) dan pendaftaran (`registerSchema`) dengan pesan validasi berbahasa Indonesia (format email valid, kata sandi minimal 8 karakter, nama minimal 2 karakter) disertai unit test lengkap di `lib/validations/auth.test.ts`.
-2. Pembuatan helper otentikasi API di `lib/supabase/auth.ts` (`getUserOrThrow` dan `getAuthenticatedUser`) yang memverifikasi sesi dengan `supabase.auth.getUser()` dan mengembalikan respons HTTP 401 saat tidak terotentikasi. Seluruh rute API (`parse-task`, `schedule`, `explain`, `reflect`, `ping`) telah diperbarui mematuhi Rule 6.
-3. Implementasi rute penukaran kode sesi di `app/auth/callback/route.ts` yang menangani redirect Google OAuth / email konfirmasi ke `/dashboard`.
-4. Implementasi `middleware.ts` untuk pembaruan sesi cookie otomatis dan pengamanan rute (mengarahkan pengguna belum login dari `/dashboard/*` ke `/login`, serta mengarahkan pengguna sudah login dari `/login` ke `/dashboard`).
-5. Pembuatan halaman masuk dan pendaftaran interaktif di `app/login/page.tsx` dengan tab toggle "Masuk" dan "Daftar", input nama lengkap, email, kata sandi, tombol Google OAuth, serta notifikasi sukses dan error berbahasa Indonesia.
-6. Pembuatan kerangka dashboard di `app/dashboard/page.tsx`, `DashboardContent.tsx`, dan `DashboardShell.tsx` dengan Suspense boundary yang kompatibel dengan Next.js Cache Components, menampilkan sapaan nama pengguna dan tombol "Keluar".
-7. Seluruh kode sumber diverifikasi bebas dari komentar (Rule 2 dipatuhi).
-8. Lolos seluruh pengujian: `lint` (0 error), `typecheck` (0 error), `test` (8 tests passed), dan `build` (13 routes compiled).
-9. Verifikasi browser berhasil dilakukan dan direkam.
+1. Penambahan skema validasi Zod untuk formulir tugas di `lib/validations/tasks.ts` (`taskFormSchema`) dengan batasan judul, durasi (15-1440 menit), kesulitan (1-5), kepentingan (1-5), opsi pecah sesi, dan status tugas.
+2. Penambahan skema validasi Zod untuk jadwal tetap mingguan di `lib/validations/fixed-events.ts` (`fixedEventFormSchema`) yang memastikan format jam HH:MM dan jam selesai lebih akhir dari jam mulai.
+3. Pembuatan parser kalender `.ics` di `lib/ics/parser.ts` yang mengekstrak aktivitas berulang mingguan (`RRULE:FREQ=WEEKLY` dengan opsi `BYDAY`) beserta pratinjau sebelum disimpan.
+4. Pembuatan komponen `Toast.tsx` dengan provider dan hook `useToast` untuk notifikasi umpan balik aksi.
+5. Pembuatan komponen formulir modal `TaskInput.tsx` untuk pembuatan dan penyuntingan tugas dengan kontrol lengkap.
+6. Pembuatan komponen `TaskPanel.tsx` untuk menampilkan daftar tugas, filter status (Semua, Todo, Selesai), lencana prioritas (Tinggi, Sedang, Rendah), durasi, tenggat waktu, pembagian sesi, tombol ubah, dan konfirmasi hapus tugas.
+7. Pembuatan komponen `FixedEventForm.tsx` untuk mengelola jadwal tetap mingguan (Senin - Minggu) dan impor berkas `.ics`.
+8. Integrasi seluruh CRUD pada `DashboardShell.tsx` dengan pembaruan UI optimis, pemuatan data asinkron, dan persistensi database Supabase.
+9. Penyempurnaan `DashboardContent.tsx` dan `RefleksiContent.tsx` dengan `connection()` dari `next/server` untuk mencegah peringatan prerender Next.js 16.
+10. Seluruh kode sumber diverifikasi bersih tanpa komentar (Rule 2 dipatuhi).
+11. Lolos seluruh pengujian: `lint` (0 error), `typecheck` (0 error), `test` (19 tests passed), dan `build` (13 routes compiled).
+12. Verifikasi browser berhasil menggunakan akun uji pengguna (`farezidhafi5@gmail.com`) dan rekaman sesi tersimpan di artefak.
 
 ### File yang Dibuat atau Diubah
-- `lib/validations/auth.ts`
-- `lib/validations/auth.test.ts`
-- `lib/supabase/auth.ts`
-- `middleware.ts`
-- `app/login/page.tsx`
-- `app/auth/callback/route.ts`
-- `app/dashboard/page.tsx`
+- `lib/validations/tasks.ts`
+- `lib/validations/tasks.test.ts`
+- `lib/validations/fixed-events.ts`
+- `lib/validations/fixed-events.test.ts`
+- `lib/ics/parser.ts`
+- `lib/ics/parser.test.ts`
+- `components/Toast.tsx`
+- `components/TaskInput.tsx`
+- `components/TaskPanel.tsx`
+- `components/FixedEventForm.tsx`
 - `app/dashboard/DashboardShell.tsx`
 - `app/dashboard/DashboardContent.tsx`
-- `app/dashboard/refleksi/page.tsx`
 - `app/dashboard/refleksi/RefleksiContent.tsx`
-- `app/api/parse-task/route.ts`
-- `app/api/schedule/route.ts`
-- `app/api/explain/route.ts`
-- `app/api/reflect/route.ts`
-- `app/api/ping/route.ts`
+- `lib/supabase/client.ts`
+- `lib/supabase/server.ts`
+- `middleware.ts`
 - `PROGRESS.md`
 
 ### Keputusan Desain / Teknis
-- Menggunakan arsitektur `<Suspense>` boundary pada halaman dashboard agar kompatibel dengan Cache Components dan Partial Prerendering (PPR) di Next.js tanpa memblokir prerender statis.
-- Menyediakan helper ganda di `lib/supabase/auth.ts`: `getUserOrThrow` untuk exception-based logic dan `getAuthenticatedUser` untuk route handler yang mengembalikan NextResponse 401 langsung.
+- Menggunakan pendekatan declarative key remount pada `TaskInput` (`key={editingTask?.id ?? ...}`) daripada sinkronisasi `useEffect` setState untuk mematuhi kaidah React 19 dan mencegah cascading re-renders.
+- Menggunakan `connection()` pada server component dashboard untuk integrasi dinamis yang mulus dengan Next.js Turbopack Partial Prerendering.
 
 ### Masalah yang Diketahui (Known Issues)
-- Untuk Google OAuth, pengguna perlu mengaktifkan Google Provider di dashboard Supabase dan menambahkan Client ID & Secret Google Cloud Console.
+- Tidak ada isu yang belum terselesaikan pada CRUD tugas dan jadwal tetap.
 
 ### Fase Berikutnya
-- **Phase 4: Calendar UI & FullCalendar Integration**
+- **Phase 5: Calendar UI & FullCalendar Integration**
 
 ---
 
-## Log Fase 2: Database Schema & Supabase Setup
+## Log Fase 3: Authentication & Protected Routes
 
 ### Item Selesai
-1. Penulisan `supabase/schema.sql` lengkap dengan 6 tabel: `profiles`, `tasks`, `fixed_events`, `energy_logs`, `schedule_blocks`, dan `reflections`.
-2. Pengaktifan Row Level Security (RLS) pada ke-6 tabel dengan kebijakan isolasi per-pengguna (`auth.uid() = user_id`, dan `auth.uid() = id` untuk `profiles`).
-3. Pembuatan fungsi `security definer` `handle_new_user()` dan trigger `on_auth_user_created` pada tabel `auth.users` untuk membuat baris profil otomatis saat pendaftaran akun.
-4. Pembuatan indeks performa pada kolom `user_id` di setiap tabel dan pada `schedule_blocks(mulai)`.
-5. Implementasi klien Supabase SSR di `lib/supabase/client.ts` (`createBrowserClient`) dan `lib/supabase/server.ts` (`createServerClient` dengan `async cookies()`).
-6. Pembuatan definisi tipe TypeScript lengkap dan terstruktur di `lib/types.ts` (`Profile`, `Task`, `FixedEvent`, `EnergyLog`, `ScheduleBlock`, `Reflection`, `Database`).
-7. Pembuatan skrip uji koneksi `scripts/smoke-supabase.ts` serta penambahan skrip `smoke:supabase` di `package.json` dan unit test klien di `lib/supabase/client.test.ts`.
-8. Seluruh file kode sumber diverifikasi bersih tanpa komentar apapun (Rule 2 dipatuhi).
-9. Lolos seluruh pengujian: `lint` (0 error), `typecheck` (0 error), `test` (3 tests passed), dan `build` (13 routes compiled).
-10. Verifikasi browser dilakukan dan direkam.
+1. Pembuatan skema validasi Zod di `lib/validations/auth.ts` untuk formulir masuk (`loginSchema`) dan pendaftaran (`registerSchema`) dengan pesan validasi berbahasa Indonesia disertai unit test lengkap di `lib/validations/auth.test.ts`.
+2. Pembuatan helper otentikasi API di `lib/supabase/auth.ts` (`getUserOrThrow` dan `getAuthenticatedUser`) yang memverifikasi sesi dengan `supabase.auth.getUser()` dan mengembalikan respons HTTP 401 saat tidak terotentikasi.
+3. Implementasi rute penukaran kode sesi di `app/auth/callback/route.ts`.
+4. Implementasi `middleware.ts` untuk pembaruan sesi cookie otomatis dan pengamanan rute.
+5. Pembuatan halaman masuk dan pendaftaran interaktif di `app/login/page.tsx`.
+6. Pembuatan kerangka dashboard di `app/dashboard/page.tsx`.
