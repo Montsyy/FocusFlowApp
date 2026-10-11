@@ -21,6 +21,20 @@ export async function GET() {
     }
   })
 
+  const hasKeys =
+    config.geminiKeys.length +
+    config.nvidiaKeys.length +
+    config.openaiKeys.length > 0
+
+  let connectionState: 'connected' | 'pending' | 'not_connected' = 'connected'
+  if (!hasKeys || config.demoFallback) {
+    connectionState = 'not_connected'
+  } else if (cooldowns.length > 0) {
+    connectionState = 'pending'
+  } else {
+    connectionState = 'connected'
+  }
+
   let activeTarget = config.targets[0]
   for (const target of config.targets) {
     const isTargetCooling = cooldowns.some(
@@ -34,8 +48,10 @@ export async function GET() {
 
   return NextResponse.json({
     chain: config.targets,
-    activeTarget,
+    activeTarget: connectionState === 'not_connected' ? undefined : activeTarget,
     coolingDown: cooldowns,
     demoFallback: config.demoFallback,
+    hasKeys,
+    connectionState,
   })
 }

@@ -7,10 +7,13 @@ interface AiStatusData {
   activeTarget?: { provider: string; model: string }
   coolingDown: Array<{ provider: string; model: string; remainingMs: number }>
   demoFallback: boolean
+  hasKeys?: boolean
+  connectionState?: 'connected' | 'pending' | 'not_connected'
 }
 
 export function AiStatusBadge() {
   const [status, setStatus] = useState<AiStatusData | null>(null)
+  const [fetchError, setFetchError] = useState(false)
   const [showTooltip, setShowTooltip] = useState(false)
 
   useEffect(() => {
@@ -19,12 +22,19 @@ export function AiStatusBadge() {
     async function fetchStatus() {
       try {
         const res = await fetch('/api/ai-status')
-        if (!res.ok) return
+        if (!res.ok) {
+          if (isMounted) setFetchError(true)
+          return
+        }
         const data = (await res.json()) as AiStatusData
         if (isMounted) {
           setStatus(data)
+          setFetchError(false)
         }
       } catch {
+        if (isMounted) {
+          setFetchError(true)
+        }
       }
     }
 
@@ -37,47 +47,47 @@ export function AiStatusBadge() {
     }
   }, [])
 
-  function formatModelLabel(target?: { provider: string; model: string }, demoFallback = false) {
-    if (demoFallback) {
-      return 'AI: Mode Cadangan'
-    }
-    if (!target) {
-      return 'AI: Otomatis'
-    }
-    if (target.provider === 'gemini') {
-      if (target.model.includes('3.5')) return 'AI: Gemini 3.5 Flash Lite'
-      if (target.model.includes('3.1')) return 'AI: Gemini 3.1 Flash Lite'
-      if (target.model.includes('2.5-flash-lite') || target.model.includes('flash-lite')) return 'AI: Gemini 2.5 Flash Lite'
-      if (target.model.includes('2.5')) return 'AI: Gemini 2.5 Flash'
-      if (target.model.includes('1.5')) return 'AI: Gemini 1.5 Flash'
-      if (target.model.toLowerCase().includes('gemma')) return 'AI: Gemma 4 26B'
-      return `AI: Gemini (${target.model})`
-    }
-    if (target.provider === 'nvidia') {
-      if (target.model.includes('glm')) return 'AI: GLM 5.3 Flash'
-      if (target.model.includes('deepseek')) return 'AI: DeepSeek v4.1 Flash'
-      if (target.model.includes('glimmer') || target.model.includes('muse')) return 'AI: Muse Glimmer 30B'
-      if (target.model.includes('llama-3.3')) return 'AI: NVIDIA Llama 3.3'
-      if (target.model.includes('llama-3.1')) return 'AI: NVIDIA Llama 3.1'
-      return `AI: NVIDIA (${target.model})`
-    }
-    if (target.provider === 'openai') {
-      if (target.model.includes('5.4')) return 'AI: OpenAI GPT-5.4 Mini'
-      if (target.model.includes('6-luna') || target.model.includes('luna')) return 'AI: OpenAI GPT-6 Luna'
-      if (target.model.includes('4.1')) return 'AI: OpenAI GPT-4.1 Mini'
-      if (target.model.includes('gpt-4o-mini')) return 'AI: OpenAI GPT-4o Mini'
-      if (target.model.includes('gpt-4o')) return 'AI: OpenAI GPT-4o'
-      if (target.model.includes('gpt-3.5')) return 'AI: OpenAI GPT-3.5'
-      if (target.model.includes('o3-mini')) return 'AI: OpenAI o3-mini'
-      if (target.model.includes('o1')) return 'AI: OpenAI o1'
-      return `AI: OpenAI (${target.model})`
-    }
-    return `AI: ${target.model}`
+  let state: 'connected' | 'pending' | 'not_connected' = 'pending'
+  if (fetchError) {
+    state = 'not_connected'
+  } else if (!status) {
+    state = 'pending'
+  } else if (status.connectionState) {
+    state = status.connectionState
+  } else if (status.demoFallback || status.hasKeys === false) {
+    state = 'not_connected'
+  } else if (status.coolingDown && status.coolingDown.length > 0) {
+    state = 'pending'
+  } else {
+    state = 'connected'
   }
 
-  const isFallback = status?.demoFallback ?? false
-  const activeLabel = formatModelLabel(status?.activeTarget, isFallback)
-  const hasCooling = (status?.coolingDown.length ?? 0) > 0
+  const config = {
+    connected: {
+      label: 'Connected',
+      dotClass: 'bg-emerald-500',
+      badgeClass:
+        'border-emerald-200/80 bg-emerald-50/70 text-emerald-700 hover:bg-emerald-100/80 dark:border-emerald-900/60 dark:bg-emerald-950/40 dark:text-emerald-300',
+      description:
+        'Layanan AI terhubung dan siap memproses tugas dan penjadwalan secara optimal.',
+    },
+    pending: {
+      label: 'Pending',
+      dotClass: 'bg-amber-500 animate-pulse',
+      badgeClass:
+        'border-amber-200/80 bg-amber-50/70 text-amber-700 hover:bg-amber-100/80 dark:border-amber-900/60 dark:bg-amber-950/40 dark:text-amber-300',
+      description:
+        'Layanan AI sedang menunggu antrean, pemulihan jeda (cooldown), atau proses failover.',
+    },
+    not_connected: {
+      label: 'Not Connected',
+      dotClass: 'bg-rose-500',
+      badgeClass:
+        'border-rose-200/80 bg-rose-50/70 text-rose-700 hover:bg-rose-100/80 dark:border-rose-900/60 dark:bg-rose-950/40 dark:text-rose-300',
+      description:
+        'Layanan AI belum terhubung atau kunci API belum dikonfigurasi. Sistem menggunakan mode cadangan deterministik.',
+    },
+  }[state]
 
   return (
     <div className="relative inline-block">
@@ -86,27 +96,35 @@ export function AiStatusBadge() {
         onMouseEnter={() => setShowTooltip(true)}
         onMouseLeave={() => setShowTooltip(false)}
         onClick={() => setShowTooltip((prev) => !prev)}
-        className="inline-flex items-center gap-1.5 rounded-full border border-indigo-200/80 bg-indigo-50/70 px-2.5 py-1 text-[11px] font-semibold text-indigo-700 transition-colors hover:bg-indigo-100/80 dark:border-indigo-900/60 dark:bg-indigo-950/40 dark:text-indigo-300"
+        className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-semibold transition-colors ${config.badgeClass}`}
       >
-        <span
-          className={`h-1.5 w-1.5 rounded-full ${
-            isFallback
-              ? 'bg-amber-500 animate-pulse'
-              : hasCooling
-              ? 'bg-blue-400'
-              : 'bg-emerald-500'
-          }`}
-        />
-        <span>{activeLabel}</span>
+        <span className={`h-1.5 w-1.5 rounded-full ${config.dotClass}`} />
+        <span>{config.label}</span>
       </button>
 
       {showTooltip && (
         <div className="absolute right-0 top-full z-50 mt-2 w-72 rounded-xl border border-zinc-200 bg-white p-3 text-xs shadow-lg dark:border-zinc-800 dark:bg-zinc-900">
-          <p className="font-semibold text-zinc-900 dark:text-zinc-100">
-            Multi-Provider AI Failover
-          </p>
-          <p className="mt-1 text-zinc-600 dark:text-zinc-400 leading-relaxed">
-            Sistem otomatis berpindah antar model Google Gemini, NVIDIA NIM, dan OpenAI saat kuota (RPM/RPD) habis atau provider mengalami gangguan.
+          <div className="flex items-center justify-between pb-1.5 border-b border-zinc-100 dark:border-zinc-800">
+            <span className="font-semibold text-zinc-900 dark:text-zinc-100">
+              AI Status
+            </span>
+            <span className="inline-flex items-center gap-1 text-[10px] font-bold">
+              <span className={`h-1.5 w-1.5 rounded-full ${config.dotClass}`} />
+              <span
+                className={
+                  state === 'connected'
+                    ? 'text-emerald-600 dark:text-emerald-400'
+                    : state === 'pending'
+                    ? 'text-amber-600 dark:text-amber-400'
+                    : 'text-rose-600 dark:text-rose-400'
+                }
+              >
+                {config.label}
+              </span>
+            </span>
+          </div>
+          <p className="mt-2 text-zinc-600 dark:text-zinc-400 leading-relaxed">
+            {config.description}
           </p>
           {status?.coolingDown && status.coolingDown.length > 0 && (
             <div className="mt-2 border-t border-zinc-100 pt-2 dark:border-zinc-800">
@@ -116,7 +134,7 @@ export function AiStatusBadge() {
               <ul className="mt-1 space-y-0.5 text-[10px] text-amber-600 dark:text-amber-400">
                 {status.coolingDown.map((c, i) => (
                   <li key={i}>
-                    {c.provider}: {c.model} ({Math.ceil(c.remainingMs / 1000)} dtk)
+                    {c.provider} ({Math.ceil(c.remainingMs / 1000)} dtk)
                   </li>
                 ))}
               </ul>

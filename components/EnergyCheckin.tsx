@@ -6,7 +6,7 @@ export function EnergyCheckin() {
   const [energy, setEnergy] = useState<'high' | 'medium' | 'low'>('high')
 
   return (
-    <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+    <div className="rounded-2xl border border-zinc-200 bg-white p-5 sm:p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
       <div className="flex items-center justify-between pb-3 border-b border-zinc-100 dark:border-zinc-800">
         <h3 className="text-sm font-bold text-zinc-900 dark:text-zinc-100">
           Check-in Energi Hari Ini
@@ -14,11 +14,11 @@ export function EnergyCheckin() {
         <span className="text-xs">⚡</span>
       </div>
 
-      <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">
+      <p className="mt-2.5 text-xs text-zinc-500 dark:text-zinc-400">
         AI menyesuaikan kepadatan sesi belajar berdasarkan kapasitas energimu.
       </p>
 
-      <div className="mt-3 grid grid-cols-3 gap-2">
+      <div className="mt-3.5 grid grid-cols-3 gap-2">
         <button
           type="button"
           onClick={() => setEnergy('high')}

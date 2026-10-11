@@ -12,7 +12,6 @@ import { Calendar } from '@/components/Calendar'
 import { BlockDetail, type SelectedEventData } from '@/components/BlockDetail'
 import { EnergyCheckin } from '@/components/EnergyCheckin'
 import { RealityCheck } from '@/components/RealityCheck'
-import { HumanScore } from '@/components/HumanScore'
 import { AiStatusBadge } from '@/components/AiStatusBadge'
 import type { Task, FixedEvent, ScheduleBlock } from '@/lib/types'
 
@@ -377,15 +376,14 @@ function DashboardContentInner({ userNama, userEmail }: DashboardShellProps) {
             </div>
 
             <div
-              className={`lg:col-span-3 flex flex-col gap-5 ${
+              className={`lg:col-span-3 flex flex-col gap-6 lg:pl-3 ${
                 mobileTab === 'metrics' ? 'block' : 'hidden lg:block'
               }`}
             >
               <EnergyCheckin />
               <RealityCheck totalEstimatedMinutes={totalEstimatedMinutes} />
-              <HumanScore />
 
-              <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+              <div className="rounded-2xl border border-zinc-200 bg-white p-5 sm:p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
                 <div className="flex items-center justify-between pb-2 border-b border-zinc-100 dark:border-zinc-800">
                   <h4 className="text-xs font-bold text-zinc-900 dark:text-zinc-100">
                     Jadwal Tetap ({fixedEvents.length})
