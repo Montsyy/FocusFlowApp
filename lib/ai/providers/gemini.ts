@@ -15,22 +15,32 @@ export async function callGemini(
 ): Promise<string> {
   try {
     const genAi = new GoogleGenerativeAI(apiKey)
+    const isGemma = model.toLowerCase().includes('gemma')
+    const generationConfig: Record<string, unknown> = {
+      temperature: req.temperature ?? 0.2,
+      maxOutputTokens: req.maxOutputTokens ?? 1024,
+    }
+    if (!isGemma) {
+      generationConfig.responseMimeType = 'application/json'
+    }
+
     const geminiModel = genAi.getGenerativeModel({
       model,
-      generationConfig: {
-        responseMimeType: 'application/json',
-        temperature: req.temperature ?? 0.2,
-        maxOutputTokens: req.maxOutputTokens ?? 1024,
-      },
-      systemInstruction: req.system,
+      generationConfig,
+      systemInstruction: isGemma ? undefined : req.system,
     })
+
+    const promptText =
+      isGemma && req.system
+        ? `${req.system}\n\nRespond with a single valid JSON object only.\n\n${req.prompt}`
+        : req.prompt
 
     const result = await geminiModel.generateContent(
       {
         contents: [
           {
             role: 'user',
-            parts: [{ text: req.prompt }],
+            parts: [{ text: promptText }],
           },
         ],
       },

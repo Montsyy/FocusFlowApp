@@ -45,16 +45,26 @@ export function AiStatusBadge() {
       return 'AI: Otomatis'
     }
     if (target.provider === 'gemini') {
+      if (target.model.includes('3.5')) return 'AI: Gemini 3.5 Flash Lite'
+      if (target.model.includes('3.1')) return 'AI: Gemini 3.1 Flash Lite'
+      if (target.model.includes('2.5-flash-lite') || target.model.includes('flash-lite')) return 'AI: Gemini 2.5 Flash Lite'
       if (target.model.includes('2.5')) return 'AI: Gemini 2.5 Flash'
       if (target.model.includes('1.5')) return 'AI: Gemini 1.5 Flash'
+      if (target.model.toLowerCase().includes('gemma')) return 'AI: Gemma 4 26B'
       return `AI: Gemini (${target.model})`
     }
     if (target.provider === 'nvidia') {
+      if (target.model.includes('glm')) return 'AI: GLM 5.3 Flash'
+      if (target.model.includes('deepseek')) return 'AI: DeepSeek v4.1 Flash'
+      if (target.model.includes('glimmer') || target.model.includes('muse')) return 'AI: Muse Glimmer 30B'
       if (target.model.includes('llama-3.3')) return 'AI: NVIDIA Llama 3.3'
       if (target.model.includes('llama-3.1')) return 'AI: NVIDIA Llama 3.1'
       return `AI: NVIDIA (${target.model})`
     }
     if (target.provider === 'openai') {
+      if (target.model.includes('5.4')) return 'AI: OpenAI GPT-5.4 Mini'
+      if (target.model.includes('6-luna') || target.model.includes('luna')) return 'AI: OpenAI GPT-6 Luna'
+      if (target.model.includes('4.1')) return 'AI: OpenAI GPT-4.1 Mini'
       if (target.model.includes('gpt-4o-mini')) return 'AI: OpenAI GPT-4o Mini'
       if (target.model.includes('gpt-4o')) return 'AI: OpenAI GPT-4o'
       if (target.model.includes('gpt-3.5')) return 'AI: OpenAI GPT-3.5'

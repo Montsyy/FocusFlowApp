@@ -7,6 +7,7 @@ import {
   nextAvailable,
   parseTask,
   resetCooldowns,
+  parseChain,
   type AiConfig,
 } from './index'
 import { z } from 'zod'
@@ -17,6 +18,7 @@ import {
   RateLimitError,
 } from './types'
 import { callOpenAi } from './providers/openai'
+import { callGemini } from './providers/gemini'
 
 const sampleSchema = z.object({
   greeting: z.string(),
@@ -624,6 +626,43 @@ describe('Multi-provider AI System', () => {
       expect(res.model).toBe('gpt-4o-mini')
       expect(res.data.greeting).toBe('openai failover sukses')
       expect(isCoolingDown('gemini:gemini-2.5-flash:0', mockClock)).toBe(true)
+    })
+  })
+
+  describe('New Models & Normalization Support', () => {
+    it('correctly parses and normalizes chain entries with new models and space formatting', () => {
+      const chainStr =
+        'openai:gpt-5.4-mini,openai:gpt-6-luna,openai:gpt-4.1-mini,gemini:Gemini 2.5 Flash Lite,gemini:Gemini 3.1 Flash Lite,gemini:Gemma 4 26B,nvidia:z-ai/glm-5.3-flash,nvidia:deepseek-ai/deepseek-v4.1-flash,nvidia:meta/muse-glimmer-30b'
+      const parsed = parseChain(chainStr)
+
+      expect(parsed).toEqual([
+        { provider: 'openai', model: 'gpt-5.4-mini' },
+        { provider: 'openai', model: 'gpt-6-luna' },
+        { provider: 'openai', model: 'gpt-4.1-mini' },
+        { provider: 'gemini', model: 'gemini-2.5-flash-lite' },
+        { provider: 'gemini', model: 'gemini-3.1-flash-lite' },
+        { provider: 'gemini', model: 'gemma-4-26b' },
+        { provider: 'nvidia', model: 'z-ai/glm-5.3-flash' },
+        { provider: 'nvidia', model: 'deepseek-ai/deepseek-v4.1-flash' },
+        { provider: 'nvidia', model: 'meta/muse-glimmer-30b' },
+      ])
+    })
+
+    it('handles Gemma models safely without responseMimeType in callGemini', async () => {
+      mockGeminiGenerateContent.mockResolvedValueOnce({
+        response: {
+          text: () => JSON.stringify({ greeting: 'dari gemma', count: 26 }),
+        },
+      })
+
+      const output = await callGemini(
+        'gemma-4-26b',
+        'gemini-key',
+        { prompt: 'test gemma', schema: sampleSchema, system: 'kamu asisten' }
+      )
+
+      expect(JSON.parse(output)).toEqual({ greeting: 'dari gemma', count: 26 })
+      expect(mockGeminiGenerateContent).toHaveBeenCalledTimes(1)
     })
   })
 })

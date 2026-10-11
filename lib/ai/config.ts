@@ -34,7 +34,11 @@ export function parseChain(chainStr?: string): AiTarget[] {
   return entries.map((entry) => {
     const [providerRaw, ...modelParts] = entry.split(':')
     const provider = providerRaw?.trim().toLowerCase() as AiProvider
-    const model = modelParts.join(':').trim()
+    const rawModel = modelParts.join(':').trim()
+    const model =
+      provider === 'gemini' && rawModel.includes(' ')
+        ? rawModel.toLowerCase().replace(/\s+/g, '-')
+        : rawModel
 
     const parsed = targetSchema.safeParse({ provider, model })
     if (!parsed.success) {
