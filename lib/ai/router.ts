@@ -270,12 +270,31 @@ export async function generateStructured<T>(
             ? config.cooldownRpdMs
             : err.retryAfterMs ?? config.cooldownRpmMs
         markCooldown(candidate.keyId, cooldownMs, clock)
+        if (err.scope === 'rpd') {
+          for (const c of allCandidates) {
+            if (
+              c.target.provider === candidate.target.provider &&
+              c.keyIndex === candidate.keyIndex
+            ) {
+              markCooldown(c.keyId, cooldownMs, clock)
+            }
+          }
+        }
         attempts.push({
           target: candidate.target,
           error: `RateLimitError (${err.scope}): ${cleanErrorMsg}`,
         })
       } else if (err instanceof AuthError) {
-        markCooldown(candidate.keyId, 24 * 60 * 60 * 1000, clock)
+        const authCooldownMs = 24 * 60 * 60 * 1000
+        markCooldown(candidate.keyId, authCooldownMs, clock)
+        for (const c of allCandidates) {
+          if (
+            c.target.provider === candidate.target.provider &&
+            c.keyIndex === candidate.keyIndex
+          ) {
+            markCooldown(c.keyId, authCooldownMs, clock)
+          }
+        }
         console.warn(
           `[FocusFlow AI] Auth failure on ${candidate.target.provider}:${candidate.target.model} key #${candidate.keyIndex}`
         )

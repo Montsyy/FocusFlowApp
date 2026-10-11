@@ -108,8 +108,8 @@ FocusFlowApp/
 │   ├── Calendar.tsx
 │   ├── EnergyCheckin.tsx
 │   ├── FixedEventForm.tsx
-│   ├── HumanScore.tsx
 │   ├── RealityCheck.tsx
+│   ├── StatCards.tsx
 │   ├── TaskInput.tsx
 │   └── TaskPanel.tsx
 ├── lib/

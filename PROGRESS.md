@@ -48,9 +48,9 @@
    - Integrasi formulir analisis AI pada `TaskInput.tsx` dengan fitur tombol "⚡ Jadwalkan Langsung" (analisis AI & langsung jadwalkan ke kalender dalam 1-klik) dan opsi "📝 Isi Form".
    - Penyusunan jadwal otomatis seketika (*instant auto-scheduling*): Saat tugas ditambahkan, diperbarui, diubah statusnya, atau dihapus, sistem langsung mengeksekusi penyusunan jadwal dan menampilkan blok jadwal secara real-time di kalender tanpa mengharuskan pengguna menekan tombol "Susun Jadwal" secara manual.
 5. Pembaruan `.env.example` & `.env.local`: Menambahkan seluruh variabel lingkungan OpenAI (`OPENAI_API_KEY`, `OPENAI_API_KEYS`, `OPENAI_BASE_URL`) dan pembaruan rantai `AI_CHAIN`.
-6. Penyempurnaan UI Dashboard (Reality Check, Human Score, & Layout Padding):
+6. Penyempurnaan UI Dashboard (Reality Check, Tingkat Penyelesaian, & Layout Padding):
    - Perbaikan Bar Reality Check: Mengoreksi bug visual di mana 0 jam tugas menampilkan bar 15% (karena evaluasi `ratioPercent || 15`). Sekarang saat 0 jam, bar benar-benar kosong (`width: 0%`) dan prop default diubah dari 90 menjadi 0 menit.
-   - Penghapusan Human Agency Score: Menghilangkan komponen `HumanScore` dari antarmuka dashboard agar tampilan kolom metrik lebih ringkas dan fokus.
+   - Penambahan Tingkat Penyelesaian: Menambahkan kartu metrik `StatCards` untuk tingkat penyelesaian tugas yang dihitung secara deterministik oleh selector teruji.
    - Peningkatan Padding Layout Kanan: Menambahkan padding `lg:pl-3` dan `gap-6` pada kolom kanan dashboard (`DashboardShell.tsx`) serta memperluas padding internal kartu (`p-5 sm:p-6`) pada `RealityCheck.tsx`, `EnergyCheckin.tsx`, dan kartu Jadwal Tetap.
 7. Redesain Layout Kalender (Google Calendar Style & Slider Terisolasi):
    - Mengubah layout header kalender menjadi urutan Minggu-Sabtu (`SUN 11` ... `SAT 17`) dengan nama hari kapital dan angka tanggal besar bersih sesuai desain terlampir.
@@ -63,7 +63,12 @@
    - Menyembunyikan elemen garis dan panah penanda merah (`.fc-timegrid-now-indicator-line` dan `.fc-timegrid-now-indicator-arrow`) di `globals.css` dengan `display: none !important`.
 9. Pengujian Vitest Lengkap (`lib/ai/index.test.ts` & `components/RealityCheck.test.tsx`):
    - 62 pengujian unit lulus (26 AI tests, 4 RealityCheck tests, 14 scheduler tests, 13 validations, 3 ics parser, 2 supabase client).
-10. Seluruh kode mematuhi aturan tanpa komentar (zero comments) dan lolos seluruh quality gate: `lint` (0 error, 0 warning), `typecheck` (0 error), `test` (62 tests passed).
+10. Seluruh kode mematuhi aturan tanpa komentar (zero comments) dan lolos seluruh quality gate: `lint` (0 error, 0 warning), `typecheck` (0 error), `test` (66 tests passed).
+11. Perbaikan Status Failover AI & Pencegahan Status Pending Parsial:
+    - Koreksi Logika Koneksi AI (`app/api/ai-status/route.ts` & `components/AiStatusBadge.tsx`): Jika salah satu provider (misalnya OpenAI) sedang dalam masa cooldown/pending, sistem secara otomatis memilih target aktif berikutnya yang sehat (misalnya Gemini atau NVIDIA) dan status badge tetap menampilkan **Connected** (hijau). Status **Pending** hanya ditampilkan jika seluruh provider/model dalam rantai sedang dalam masa cooldown.
+    - Failover Instan pada Router (`lib/ai/router.ts`): Memastikan saat terjadi kegagalan autentikasi (`AuthError`) atau kuota harian habis (`RateLimitError(rpd)`), seluruh entri kandidat yang menggunakan kunci tersebut langsung masuk masa jeda sehingga sistem seketika beralih ke provider aktif berikutnya tanpa delay.
+    - Deduplikasi Tampilan Cooldown: Menggabungkan daftar masa jeda berdasarkan provider sehingga tidak muncul baris provider yang sama berulang kali di popover AI Status.
+    - Pengujian Unit Otomatis (`app/api/ai-status/route.test.ts`): Menambahkan 4 skenario pengujian komprehensif untuk memastikan status tetap `connected` saat salah satu provider pending, auto-failover target aktif, status `pending` saat seluruh rantai jeda, serta mode `not_connected`. Seluruh 66 pengujian Vitest lulus 100%.
 
 ### Langkah Konfigurasi Pengguna (Human Steps)
 1. Dapatkan kunci API OpenAI di [platform.openai.com](https://platform.openai.com), kunci API Google AI Studio di [aistudio.google.com](https://aistudio.google.com), atau kunci NVIDIA di [build.nvidia.com](https://build.nvidia.com).
@@ -88,6 +93,7 @@
 - `app/api/explain/route.ts`
 - `app/api/reflect/route.ts`
 - `app/api/ai-status/route.ts`
+- `app/api/ai-status/route.test.ts`
 - `app/api/schedule/route.ts`
 - `components/AiStatusBadge.tsx`
 - `components/TaskInput.tsx`
@@ -161,7 +167,7 @@
 3. Konversi dan render `fixed_events` mingguan sebagai recurring events dengan warna abu-abu netral (`#64748B`), non-draggable, dan penanda ikon 📌.
 4. Render blok jadwal (`schedule_blocks`) dengan diferensiasi warna visual: biru (`#3B82F6`) untuk rencana AI, hijau emerald (`#10B981`) jika dimodifikasi manusia, serta ikon gembok 🔒 jika berstatus dikunci.
 5. Navigasi mingguan kustom (`◀`, `Hari Ini`, `▶`) serta penampil judul minggu berbahasa Indonesia dari event `datesSet`.
-6. Komposisi layout dashboard 3 kolom di desktop: TaskPanel di kolom kiri (span 3), Calendar di kolom tengah (span 6), serta widget EnergyCheckin, RealityCheck, dan HumanScore di kolom kanan (span 3).
+6. Komposisi layout dashboard 3 kolom di desktop: TaskPanel di kolom kiri (span 3), Calendar di kolom tengah (span 6), serta widget EnergyCheckin, RealityCheck, dan StatCards di kolom kanan (span 3).
 7. Tata letak responsif untuk perangkat mobile dengan sistem tab switching yang rapi: "Tugas", "Kalender", dan "Panel & Metrik".
 8. Komponen modal drawer `components/BlockDetail.tsx` yang menampilkan judul tugas, rentang waktu, status modifikasi, dan penjelasan AI saat jadwal diklik.
 9. Helper pengujian blok jadwal sementara dibuat untuk verifikasi rendering visual dan telah dibersihkan sebelum commit.
@@ -173,7 +179,7 @@
 - `components/BlockDetail.tsx`
 - `components/EnergyCheckin.tsx`
 - `components/RealityCheck.tsx`
-- `components/HumanScore.tsx`
+- `components/StatCards.tsx`
 - `app/dashboard/DashboardShell.tsx`
 - `package.json`
 - `package-lock.json`

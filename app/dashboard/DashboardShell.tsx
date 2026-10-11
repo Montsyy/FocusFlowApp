@@ -12,6 +12,7 @@ import { Calendar } from '@/components/Calendar'
 import { BlockDetail, type SelectedEventData } from '@/components/BlockDetail'
 import { EnergyCheckin } from '@/components/EnergyCheckin'
 import { RealityCheck } from '@/components/RealityCheck'
+import { StatCards } from '@/components/StatCards'
 import { AiStatusBadge } from '@/components/AiStatusBadge'
 import type { Task, FixedEvent, ScheduleBlock } from '@/lib/types'
 
@@ -379,6 +380,7 @@ function DashboardContentInner({ userNama, userEmail }: DashboardShellProps) {
                 mobileTab === 'metrics' ? 'block' : 'hidden lg:block'
               }`}
             >
+              <StatCards tasks={tasks} />
               <EnergyCheckin />
               <RealityCheck totalEstimatedMinutes={totalEstimatedMinutes} />
 

@@ -11,45 +11,75 @@ export async function GET() {
   }
 
   const config = getAiConfig()
-  const cooldowns = getAllCooldowns().map((item) => {
-    const parts = item.key.split(':')
-    return {
-      provider: parts[0] || 'unknown',
-      model: parts[1] || 'unknown',
-      remainingMs: item.remainingMs,
-      until: item.until,
-    }
-  })
+  const rawCooldowns = getAllCooldowns()
+  const cooldownKeySet = new Set(rawCooldowns.map((c) => c.key))
 
-  const hasKeys =
-    config.geminiKeys.length +
-    config.nvidiaKeys.length +
-    config.openaiKeys.length > 0
+  const allCandidates: Array<{
+    target: (typeof config.targets)[0]
+    keyIndex: number
+    keyId: string
+  }> = []
+
+  for (const target of config.targets) {
+    const keys =
+      target.provider === 'gemini'
+        ? config.geminiKeys
+        : target.provider === 'nvidia'
+        ? config.nvidiaKeys
+        : config.openaiKeys
+    for (let i = 0; i < keys.length; i++) {
+      allCandidates.push({
+        target,
+        keyIndex: i,
+        keyId: `${target.provider}:${target.model}:${i}`,
+      })
+    }
+  }
+
+  const hasKeys = allCandidates.length > 0
+
+  const eligibleCandidates = allCandidates.filter(
+    (c) => !cooldownKeySet.has(c.keyId)
+  )
+
+  const activeTarget =
+    eligibleCandidates.length > 0 ? eligibleCandidates[0].target : undefined
 
   let connectionState: 'connected' | 'pending' | 'not_connected' = 'connected'
   if (!hasKeys || config.demoFallback) {
     connectionState = 'not_connected'
-  } else if (cooldowns.length > 0) {
-    connectionState = 'pending'
-  } else {
+  } else if (eligibleCandidates.length > 0) {
     connectionState = 'connected'
+  } else {
+    connectionState = 'pending'
   }
 
-  let activeTarget = config.targets[0]
-  for (const target of config.targets) {
-    const isTargetCooling = cooldowns.some(
-      (c) => c.provider === target.provider && c.model === target.model
-    )
-    if (!isTargetCooling) {
-      activeTarget = target
-      break
+  const cooldownMapByProvider = new Map<
+    string,
+    { provider: string; model: string; remainingMs: number; until: string }
+  >()
+
+  for (const item of rawCooldowns) {
+    const parts = item.key.split(':')
+    const provider = parts[0] || 'unknown'
+    const model = parts[1] || 'unknown'
+    const existing = cooldownMapByProvider.get(provider)
+    if (!existing || item.remainingMs > existing.remainingMs) {
+      cooldownMapByProvider.set(provider, {
+        provider,
+        model,
+        remainingMs: item.remainingMs,
+        until: item.until,
+      })
     }
   }
 
+  const coolingDown = Array.from(cooldownMapByProvider.values())
+
   return NextResponse.json({
     chain: config.targets,
-    activeTarget: connectionState === 'not_connected' ? undefined : activeTarget,
-    coolingDown: cooldowns,
+    activeTarget,
+    coolingDown,
     demoFallback: config.demoFallback,
     hasKeys,
     connectionState,

@@ -47,7 +47,7 @@ export function AiStatusBadge() {
     }
   }, [])
 
-  let state: 'connected' | 'pending' | 'not_connected' = 'pending'
+  let state: 'connected' | 'pending' | 'not_connected' = 'connected'
   if (fetchError) {
     state = 'not_connected'
   } else if (!status) {
@@ -56,6 +56,8 @@ export function AiStatusBadge() {
     state = status.connectionState
   } else if (status.demoFallback || status.hasKeys === false) {
     state = 'not_connected'
+  } else if (status.activeTarget) {
+    state = 'connected'
   } else if (status.coolingDown && status.coolingDown.length > 0) {
     state = 'pending'
   } else {
@@ -69,7 +71,9 @@ export function AiStatusBadge() {
       badgeClass:
         'border-emerald-200/80 bg-emerald-50/70 text-emerald-700 hover:bg-emerald-100/80 dark:border-emerald-900/60 dark:bg-emerald-950/40 dark:text-emerald-300',
       description:
-        'Layanan AI terhubung dan siap memproses tugas dan penjadwalan secara optimal.',
+        status?.coolingDown && status.coolingDown.length > 0
+          ? 'Layanan AI terhubung. Sistem otomatis beralih ke provider aktif karena terdapat provider/model lain yang sedang dalam masa jeda.'
+          : 'Layanan AI terhubung dan siap memproses tugas dan penjadwalan secara optimal.',
     },
     pending: {
       label: 'Pending',
@@ -77,7 +81,7 @@ export function AiStatusBadge() {
       badgeClass:
         'border-amber-200/80 bg-amber-50/70 text-amber-700 hover:bg-amber-100/80 dark:border-amber-900/60 dark:bg-amber-950/40 dark:text-amber-300',
       description:
-        'Layanan AI sedang menunggu antrean, pemulihan jeda (cooldown), atau proses failover.',
+        'Seluruh layanan AI sedang dalam masa jeda (cooldown) atau antrean. Sistem akan mencoba kembali saat masa jeda berakhir.',
     },
     not_connected: {
       label: 'Not Connected',
@@ -129,7 +133,9 @@ export function AiStatusBadge() {
           {status?.coolingDown && status.coolingDown.length > 0 && (
             <div className="mt-2 border-t border-zinc-100 pt-2 dark:border-zinc-800">
               <p className="text-[10px] font-semibold text-zinc-500">
-                Dalam Masa Tunggu Cooldown:
+                {state === 'connected'
+                  ? 'Provider Lain Sedang Jeda (Otomatis Dialihkan):'
+                  : 'Dalam Masa Tunggu Cooldown:'}
               </p>
               <ul className="mt-1 space-y-0.5 text-[10px] text-amber-600 dark:text-amber-400">
                 {status.coolingDown.map((c, i) => (
