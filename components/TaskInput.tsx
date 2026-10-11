@@ -94,6 +94,65 @@ export function TaskInput({ initialData, isOpen, onClose, onSave }: TaskInputPro
     }
   }
 
+  async function handleAiQuickAdd() {
+    if (!aiPrompt.trim()) return
+    setAiLoading(true)
+    setErrorMsg(null)
+
+    try {
+      const res = await fetch('/api/parse-task', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          prompt: aiPrompt,
+          currentDate: new Date().toISOString(),
+        }),
+      })
+
+      if (!res.ok) {
+        throw new Error('Gagal menganalisis tugas')
+      }
+
+      const json = await res.json()
+      const data = json.data
+
+      let parsedDeadline: string | null = null
+      if (data?.deadline) {
+        try {
+          parsedDeadline = new Date(data.deadline).toISOString()
+        } catch {
+          parsedDeadline = null
+        }
+      }
+
+      const { data: inserted, error: insertError } = await supabase
+        .from('tasks')
+        .insert({
+          judul: data?.title || aiPrompt,
+          deadline: parsedDeadline,
+          durasi_menit: data?.estimated_minutes ?? 60,
+          kesulitan: data?.difficulty ?? 3,
+          kepentingan: data?.importance ?? 3,
+          can_split: data?.can_split ?? false,
+          sesi_disarankan: data?.suggested_sessions ?? 1,
+          status: 'todo',
+        })
+        .select()
+        .single()
+
+      if (insertError) throw insertError
+
+      onSave(inserted as Task)
+      onClose()
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Gagal menambahkan tugas otomatis'
+      setErrorMsg(msg)
+      showToast(msg, 'error')
+    } finally {
+      setAiLoading(false)
+    }
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setErrorMsg(null)
@@ -137,7 +196,6 @@ export function TaskInput({ initialData, isOpen, onClose, onSave }: TaskInputPro
           throw error
         }
 
-        showToast('Tugas berhasil diperbarui', 'success')
         onSave(data as Task)
         onClose()
       } else {
@@ -160,7 +218,6 @@ export function TaskInput({ initialData, isOpen, onClose, onSave }: TaskInputPro
           throw error
         }
 
-        showToast('Tugas baru berhasil ditambahkan', 'success')
         onSave(data as Task)
         onClose()
       }
@@ -203,7 +260,7 @@ export function TaskInput({ initialData, isOpen, onClose, onSave }: TaskInputPro
             <p className="mt-0.5 text-[11px] text-zinc-500 dark:text-zinc-400">
               Ketik deskripsi tugas bebas (contoh: &quot;Laporan praktikum 2 jam deadline besok sore penting sulit&quot;)
             </p>
-            <div className="mt-2 flex gap-2">
+            <div className="mt-2 flex flex-wrap sm:flex-nowrap gap-2">
               <input
                 type="text"
                 value={aiPrompt}
@@ -211,19 +268,30 @@ export function TaskInput({ initialData, isOpen, onClose, onSave }: TaskInputPro
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') {
                     e.preventDefault()
-                    void handleAiParse()
+                    void handleAiQuickAdd()
                   }
                 }}
                 placeholder="Tulis deskripsi tugas..."
-                className="flex-1 rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-xs text-zinc-900 focus:border-indigo-500 focus:outline-none dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
+                className="flex-1 min-w-[200px] rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-xs text-zinc-900 focus:border-indigo-500 focus:outline-none dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
               />
               <button
                 type="button"
                 disabled={aiLoading || !aiPrompt.trim()}
                 onClick={handleAiParse}
-                className="rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-indigo-500 disabled:opacity-50 transition-colors"
+                title="Isi formulir di bawah dengan hasil analisis AI untuk ditinjau"
+                className="rounded-lg border border-indigo-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-indigo-700 shadow-sm hover:bg-indigo-50 disabled:opacity-50 transition-colors shrink-0 dark:border-indigo-800 dark:bg-zinc-800 dark:text-indigo-300"
               >
-                {aiLoading ? 'Menganalisis...' : 'Analisis AI'}
+                {aiLoading ? 'Memproses...' : '📝 Isi Form'}
+              </button>
+              <button
+                type="button"
+                disabled={aiLoading || !aiPrompt.trim()}
+                onClick={handleAiQuickAdd}
+                title="Analisis dan langsung tempatkan tugas ke kalender"
+                className="rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-indigo-500 disabled:opacity-50 transition-colors flex items-center gap-1 shrink-0"
+              >
+                <span>⚡</span>
+                <span>{aiLoading ? 'Menjadwalkan...' : 'Jadwalkan Langsung'}</span>
               </button>
             </div>
           </div>
@@ -375,9 +443,16 @@ export function TaskInput({ initialData, isOpen, onClose, onSave }: TaskInputPro
             <button
               type="submit"
               disabled={loading}
-              className="rounded-xl bg-indigo-600 px-5 py-2 text-xs font-semibold text-white shadow-md shadow-indigo-500/20 hover:bg-indigo-500 disabled:opacity-50"
+              className="rounded-xl bg-indigo-600 px-5 py-2 text-xs font-semibold text-white shadow-md shadow-indigo-500/20 hover:bg-indigo-500 disabled:opacity-50 flex items-center gap-1.5"
             >
-              {loading ? 'Menyimpan...' : initialData ? 'Perbarui Tugas' : 'Simpan Tugas'}
+              <span>✨</span>
+              <span>
+                {loading
+                  ? 'Menyimpan & Menyusun...'
+                  : initialData
+                  ? 'Perbarui & Sinkron Kalender'
+                  : 'Simpan & Tempatkan ke Kalender'}
+              </span>
             </button>
           </div>
         </form>

@@ -45,11 +45,12 @@
 4. Pembaruan Antarmuka Pengguna (UI):
    - Komponen `AiStatusBadge.tsx` di header dashboard yang menampilkan model aktif (contoh: "AI: OpenAI GPT-4o Mini", "AI: Gemini 2.5 Flash", "AI: NVIDIA Llama 3.3", atau "AI: Mode Cadangan") beserta tooltip penjelasan failover otomatis.
    - Tombol "✨ Susun Jadwal" di header dashboard untuk memetakan tugas aktif ke kalender secara langsung.
-   - Integrasi formulir analisis AI pada `TaskInput.tsx` dengan notifikasi "Beralih ke model cadangan" saat fallback aktif.
+   - Integrasi formulir analisis AI pada `TaskInput.tsx` dengan fitur tombol "⚡ Jadwalkan Langsung" (analisis AI & langsung jadwalkan ke kalender dalam 1-klik) dan opsi "📝 Isi Form".
+   - Penyusunan jadwal otomatis seketika (*instant auto-scheduling*): Saat tugas ditambahkan, diperbarui, diubah statusnya, atau dihapus, sistem langsung mengeksekusi penyusunan jadwal dan menampilkan blok jadwal secara real-time di kalender tanpa mengharuskan pengguna menekan tombol "Susun Jadwal" secara manual.
 5. Pembaruan `.env.example` & `.env.local`: Menambahkan seluruh variabel lingkungan OpenAI (`OPENAI_API_KEY`, `OPENAI_API_KEYS`, `OPENAI_BASE_URL`) dan pembaruan rantai `AI_CHAIN`.
 6. Pengujian Vitest Lengkap (`lib/ai/index.test.ts`):
-   - 24 pengujian unit AI lulus (total 56 pengujian di seluruh proyek) mencakup integrasi OpenAI (GPT-4o mini, o-series o3-mini, fallback 400 tanpa format, deteksi quota RPD, failover Gemini -> OpenAI -> NVIDIA), failover 429 RPM, rotasi kunci, penanganan 401 AuthError, timeout, perbaikan JSON, fallback NVIDIA 400, pemulihan cooldown, sanitasi kunci pada error, dan aktivasi `DEMO_FALLBACK`.
-7. Seluruh kode mematuhi aturan tanpa komentar (zero comments) dan lolos seluruh quality gate: `lint` (0 error, 0 warning), `typecheck` (0 error), `test` (56 tests passed), dan `build` (14 routes compiled).
+   - 26 pengujian unit AI lulus (total 58 pengujian di seluruh proyek) mencakup integrasi OpenAI (GPT-4o mini, o-series o3-mini, fallback 400 tanpa format, deteksi quota RPD, failover Gemini -> OpenAI -> NVIDIA), normalisasi model berspasi (Gemma 4 26B, Gemini Flash Lite), toleransi Gemma pada SDK, failover 429 RPM, rotasi kunci, penanganan 401 AuthError, timeout, perbaikan JSON, fallback NVIDIA 400, pemulihan cooldown, sanitasi kunci pada error, dan aktivasi `DEMO_FALLBACK`.
+7. Seluruh kode mematuhi aturan tanpa komentar (zero comments) dan lolos seluruh quality gate: `lint` (0 error, 0 warning), `typecheck` (0 error), `test` (58 tests passed), dan `build` (14 routes compiled).
 
 ### Langkah Konfigurasi Pengguna (Human Steps)
 1. Dapatkan kunci API OpenAI di [platform.openai.com](https://platform.openai.com), kunci API Google AI Studio di [aistudio.google.com](https://aistudio.google.com), atau kunci NVIDIA di [build.nvidia.com](https://build.nvidia.com).

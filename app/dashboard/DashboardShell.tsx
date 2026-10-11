@@ -118,6 +118,44 @@ function DashboardContentInner({ userNama, userEmail }: DashboardShellProps) {
     }
   }
 
+  async function handleAutoSchedule(options: { silent?: boolean; customSuccessMessage?: string } = {}) {
+    setScheduling(true)
+    try {
+      const res = await fetch('/api/schedule', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      })
+      if (!res.ok) {
+        throw new Error('Gagal menyusun jadwal otomatis')
+      }
+      const data = await res.json()
+      if (data.blocks) {
+        setScheduleBlocks(data.blocks)
+        const count = data.blocks.length
+        const unplacedCount = data.unplaced?.length ?? 0
+        if (!options.silent) {
+          if (unplacedCount > 0) {
+            showToast(
+              `${count} blok terjadwal di kalender (${unplacedCount} tugas di luar batas jam belajar).`,
+              'info'
+            )
+          } else if (options.customSuccessMessage) {
+            showToast(options.customSuccessMessage, 'success')
+          } else {
+            showToast(`${count} blok tugas berhasil dijadwalkan ke kalender! 🎉`, 'success')
+          }
+        }
+      }
+    } catch (err) {
+      if (!options.silent) {
+        const msg = err instanceof Error ? err.message : 'Gagal menyusun jadwal'
+        showToast(msg, 'error')
+      }
+    } finally {
+      setScheduling(false)
+    }
+  }
+
   async function handleToggleTaskStatus(task: Task) {
     const nextStatus = task.status === 'done' ? 'todo' : 'done'
     const prevTasks = [...tasks]
@@ -139,6 +177,7 @@ function DashboardContentInner({ userNama, userEmail }: DashboardShellProps) {
           : 'Tugas dikembalikan ke antrean todo',
         'success'
       )
+      void handleAutoSchedule({ silent: true })
     } catch (err) {
       setTasks(prevTasks)
       const msg = err instanceof Error ? err.message : 'Gagal mengubah status tugas'
@@ -154,6 +193,7 @@ function DashboardContentInner({ userNama, userEmail }: DashboardShellProps) {
       const { error } = await supabase.from('tasks').delete().eq('id', taskId)
       if (error) throw error
       showToast('Tugas berhasil dihapus', 'success')
+      void handleAutoSchedule({ silent: true })
     } catch (err) {
       setTasks(prevTasks)
       const msg = err instanceof Error ? err.message : 'Gagal menghapus tugas'
@@ -161,7 +201,8 @@ function DashboardContentInner({ userNama, userEmail }: DashboardShellProps) {
     }
   }
 
-  function handleSaveTask(savedTask: Task) {
+  async function handleSaveTask(savedTask: Task) {
+    const isNew = !tasks.some((t) => t.id === savedTask.id)
     setTasks((current) => {
       const exists = current.some((t) => t.id === savedTask.id)
       if (exists) {
@@ -169,35 +210,13 @@ function DashboardContentInner({ userNama, userEmail }: DashboardShellProps) {
       }
       return [savedTask, ...current]
     })
-  }
 
-  async function handleAutoSchedule() {
-    setScheduling(true)
-    try {
-      const res = await fetch('/api/schedule', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-      })
-      if (!res.ok) {
-        throw new Error('Gagal menyusun jadwal otomatis')
-      }
-      const data = await res.json()
-      if (data.blocks) {
-        setScheduleBlocks(data.blocks)
-        const count = data.blocks.length
-        const unplacedCount = data.unplaced?.length ?? 0
-        if (unplacedCount > 0) {
-          showToast(`${count} blok terjadwal. ${unplacedCount} tugas belum muat.`, 'info')
-        } else {
-          showToast(`${count} blok tugas berhasil dijadwalkan ke kalender! 🎉`, 'success')
-        }
-      }
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Gagal menyusun jadwal'
-      showToast(msg, 'error')
-    } finally {
-      setScheduling(false)
-    }
+    await handleAutoSchedule({
+      silent: false,
+      customSuccessMessage: isNew
+        ? `Tugas "${savedTask.judul}" berhasil ditambahkan & langsung dijadwalkan di kalender! 📅`
+        : `Tugas "${savedTask.judul}" diperbarui & jadwal kalender disinkronkan! 📅`,
+    })
   }
 
   const totalEstimatedMinutes = tasks
@@ -254,7 +273,7 @@ function DashboardContentInner({ userNama, userEmail }: DashboardShellProps) {
             <button
               type="button"
               disabled={scheduling}
-              onClick={handleAutoSchedule}
+              onClick={() => void handleAutoSchedule()}
               className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-indigo-600 to-blue-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:from-indigo-500 hover:to-blue-500 disabled:opacity-50 transition-all"
             >
               <span>✨</span>
@@ -416,8 +435,8 @@ function DashboardContentInner({ userNama, userEmail }: DashboardShellProps) {
         isOpen={taskModalOpen}
         initialData={editingTask}
         onClose={() => setTaskModalOpen(false)}
-        onSave={(task) => {
-          handleSaveTask(task)
+        onSave={async (task) => {
+          await handleSaveTask(task)
           void reloadTasks()
         }}
       />
