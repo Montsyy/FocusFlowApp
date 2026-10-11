@@ -2,7 +2,7 @@
 
 ## Daftar Fase (Phase 1 - 14)
 - [x] **Phase 1: Project Foundation**
-- [ ] **Phase 2: Database Schema & Supabase Setup**
+- [x] **Phase 2: Database Schema & Supabase Setup**
 - [ ] **Phase 3: Authentication & Protected Routes**
 - [ ] **Phase 4: Calendar UI & FullCalendar Integration**
 - [ ] **Phase 5: Task Management & TaskPanel UI**
@@ -18,6 +18,43 @@
 
 ---
 
+## Log Fase 2: Database Schema & Supabase Setup
+
+### Item Selesai
+1. Penulisan `supabase/schema.sql` lengkap dengan 6 tabel: `profiles`, `tasks`, `fixed_events`, `energy_logs`, `schedule_blocks`, dan `reflections`.
+2. Pengaktifan Row Level Security (RLS) pada ke-6 tabel dengan kebijakan isolasi per-pengguna (`auth.uid() = user_id`, dan `auth.uid() = id` untuk `profiles`).
+3. Pembuatan fungsi `security definer` `handle_new_user()` dan trigger `on_auth_user_created` pada tabel `auth.users` untuk membuat baris profil otomatis saat pendaftaran akun.
+4. Pembuatan indeks performa pada kolom `user_id` di setiap tabel dan pada `schedule_blocks(mulai)`.
+5. Implementasi klien Supabase SSR di `lib/supabase/client.ts` (`createBrowserClient`) dan `lib/supabase/server.ts` (`createServerClient` dengan `async cookies()`).
+6. Pembuatan definisi tipe TypeScript lengkap dan terstruktur di `lib/types.ts` (`Profile`, `Task`, `FixedEvent`, `EnergyLog`, `ScheduleBlock`, `Reflection`, `Database`).
+7. Pembuatan skrip uji koneksi `scripts/smoke-supabase.ts` serta penambahan skrip `smoke:supabase` di `package.json` dan unit test klien di `lib/supabase/client.test.ts`.
+8. Seluruh file kode sumber diverifikasi bersih tanpa komentar apapun (Rule 2 dipatuhi).
+9. Lolos seluruh pengujian: `lint` (0 error), `typecheck` (0 error), `test` (3 tests passed), dan `build` (13 routes compiled).
+10. Verifikasi browser dilakukan dan direkam.
+
+### File yang Dibuat atau Diubah
+- `supabase/schema.sql`
+- `lib/types.ts`
+- `lib/supabase/client.ts`
+- `lib/supabase/server.ts`
+- `lib/supabase/client.test.ts`
+- `scripts/smoke-supabase.ts`
+- `package.json`
+- `PROGRESS.md`
+
+### Keputusan Desain / Teknis
+- Menggunakan skema modular `Database` di `lib/types.ts` untuk inferensi tipe otomatis query Supabase di masa depan.
+- Menangani nilai lingkungan kosong pada klien Supabase dengan fallback URL yang aman agar proses `build` statis Next.js tidak crash saat kredensial belum diatur di lingkungan CI.
+- Mengimplementasikan `scripts/smoke-supabase.ts` yang memberikan diagnostik informatif dalam Bahasa Indonesia jika kunci belum disetel.
+
+### Masalah yang Diketahui (Known Issues)
+- Memerlukan tindakan manusia: proyek Supabase perlu dibuat, `supabase/schema.sql` dijalankan di SQL Editor, dan kunci Supabase disalin ke `.env.local`.
+
+### Fase Berikutnya
+- **Phase 3: Authentication & Protected Routes**
+
+---
+
 ## Log Fase 1: Project Foundation
 
 ### Item Selesai
@@ -30,35 +67,3 @@
 7. Pembuatan halaman landing page modern dan responsif di `/` dengan tagline *"AI menyusun rencana, kamu yang memegang kendali."*, pengantar fitur, dan tombol aksi "Masuk" yang terhubung ke `/login`.
 8. Pembuatan kerangka dokumentasi `README.md` mencakup Deskripsi, Fitur, Tech Stack, Setup Lokal, Deploy, dan Struktur Proyek.
 9. Pembuatan dokumen pelacak kemajuan `PROGRESS.md`.
-
-### File yang Dibuat atau Diubah
-- `package.json`, `package-lock.json`
-- `tsconfig.json`
-- `vitest.config.mts`
-- `.gitignore`, `.env.example`
-- `app/layout.tsx`, `app/globals.css`, `app/page.tsx`
-- `app/login/page.tsx`
-- `app/auth/callback/route.ts`
-- `app/dashboard/page.tsx`, `app/dashboard/refleksi/page.tsx`
-- `app/api/parse-task/route.ts`, `app/api/schedule/route.ts`, `app/api/explain/route.ts`, `app/api/reflect/route.ts`, `app/api/ping/route.ts`
-- `components/Calendar.tsx`, `components/TaskPanel.tsx`, `components/TaskInput.tsx`, `components/FixedEventForm.tsx`, `components/EnergyCheckin.tsx`, `components/RealityCheck.tsx`, `components/BlockDetail.tsx`, `components/HumanScore.tsx`
-- `lib/supabase/client.ts`, `lib/supabase/server.ts`
-- `lib/scheduler/index.ts`, `lib/scheduler/priority.ts`, `lib/scheduler/slots.ts`, `lib/scheduler/index.test.ts`
-- `lib/ai/gemini.ts`, `lib/ai/schemas.ts`
-- `middleware.ts`
-- `supabase/schema.sql`
-- `scripts/seed.ts`
-- `.github/workflows/keepalive.yml`
-- `README.md`
-- `PROGRESS.md`
-
-### Keputusan Desain / Teknis
-- Menggunakan `vitest.config.mts` untuk kompatibilitas penuh dengan ESM dan menghindari peringatan loader Node.js.
-- Mengatur konfigurasi Tailwind CSS modern dengan palet warna bernuansa netral zinc dan aksen indigo untuk estetika profesional dan elegan.
-- Memastikan tidak ada komentar apa pun dalam file kode sumber (.ts, .tsx, .css, .sql) sesuai aturan Rule 2.
-
-### Masalah yang Diketahui (Known Issues)
-- Belum ada koneksi Supabase dan Gemini API yang aktif karena kredensial belum dikonfigurasi (akan dihubungkan pada fase terkait).
-
-### Fase Berikutnya
-- **Phase 2: Database Schema & Supabase Setup**
