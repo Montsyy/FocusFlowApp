@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useState, useMemo } from 'react'
+import { useRef, useState, useMemo, useEffect } from 'react'
 import FullCalendar from '@fullcalendar/react'
 import timeGridPlugin from '@fullcalendar/timegrid'
 import dayGridPlugin from '@fullcalendar/daygrid'
@@ -24,6 +24,20 @@ export function Calendar({
 }: CalendarProps) {
   const calendarRef = useRef<FullCalendar | null>(null)
   const [weekTitle, setWeekTitle] = useState('')
+
+  useEffect(() => {
+    function setTz() {
+      const el = document.querySelector(
+        '.fc-scrollgrid-section-header .fc-timegrid-axis-cushion'
+      )
+      if (el && el.textContent !== 'GMT+07') {
+        el.textContent = 'GMT+07'
+      }
+    }
+    setTz()
+    const timer = setInterval(setTz, 400)
+    return () => clearInterval(timer)
+  }, [weekTitle])
 
   const taskMap = useMemo(() => {
     const map = new Map<string, Task>()
@@ -88,8 +102,8 @@ export function Calendar({
   }
 
   return (
-    <div className="flex flex-col h-full rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm sm:p-5 dark:border-zinc-800 dark:bg-zinc-900">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-zinc-200 dark:border-zinc-800">
+    <div className="flex flex-col h-[740px] rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm sm:p-5 dark:border-zinc-800 dark:bg-zinc-900">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-zinc-200 dark:border-zinc-800">
         <div className="flex items-center gap-2">
           <div className="flex items-center rounded-xl bg-zinc-100 p-1 dark:bg-zinc-800">
             <button
@@ -141,31 +155,81 @@ export function Calendar({
         </div>
       </div>
 
-      <div className="mt-4 flex-1 min-h-[560px]">
+      <div className="mt-3 flex-1 min-h-0 overflow-hidden">
         <FullCalendar
           ref={calendarRef}
           plugins={[timeGridPlugin, dayGridPlugin, interactionPlugin]}
           initialView="timeGridWeek"
           locales={[idLocale]}
           locale="id"
-          firstDay={1}
-          slotDuration="00:30:00"
-          slotMinTime="06:00:00"
-          slotMaxTime="23:30:00"
+          firstDay={0}
+          slotDuration="01:00:00"
+          slotLabelInterval="01:00:00"
+          slotMinTime="00:00:00"
+          slotMaxTime="24:00:00"
+          scrollTime="07:00:00"
           allDaySlot={false}
           nowIndicator={true}
-          height="auto"
+          height="100%"
           expandRows={true}
           headerToolbar={false}
-          slotLabelFormat={{
-            hour: '2-digit',
-            minute: '2-digit',
-            hour12: false,
+          dayHeaderContent={(arg) => {
+            const dayNames = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT']
+            const dayName = dayNames[arg.date.getDay()]
+            const dayNum = arg.date.getDate()
+            const isToday = arg.isToday
+
+            return (
+              <div className="flex flex-col items-center justify-center py-2 select-none">
+                <span
+                  className={`text-[11px] font-semibold tracking-wider uppercase ${
+                    isToday
+                      ? 'text-indigo-600 font-bold dark:text-indigo-400'
+                      : 'text-zinc-500 dark:text-zinc-400'
+                  }`}
+                >
+                  {dayName}
+                </span>
+                <span
+                  className={`mt-0.5 flex h-8 w-8 items-center justify-center text-2xl font-normal transition-colors ${
+                    isToday
+                      ? 'rounded-full bg-indigo-600 font-medium text-white shadow-sm'
+                      : 'text-zinc-900 dark:text-zinc-100'
+                  }`}
+                >
+                  {dayNum}
+                </span>
+              </div>
+            )
+          }}
+          slotLabelContent={(arg) => {
+            const hour = arg.date.getHours()
+            if (hour === 0) {
+              return <span className="opacity-0 select-none">0</span>
+            }
+            const ampm = hour >= 12 ? 'PM' : 'AM'
+            const hour12 = hour % 12 === 0 ? 12 : hour % 12
+            return (
+              <span className="text-[11px] font-medium text-zinc-500 dark:text-zinc-400 select-none pr-1.5">
+                {hour12} {ampm}
+              </span>
+            )
           }}
           eventTimeFormat={{
-            hour: '2-digit',
+            hour: 'numeric',
             minute: '2-digit',
-            hour12: false,
+            hour12: true,
+            meridiem: 'short',
+          }}
+          eventContent={(arg) => {
+            const timeText = arg.timeText
+            const title = arg.event.title
+            return (
+              <div className="flex flex-col h-full w-full overflow-hidden p-1 text-[11px] leading-tight select-none cursor-pointer">
+                <span className="font-semibold truncate">{title}</span>
+                {timeText && <span className="text-[10px] opacity-85 truncate mt-0.5">{timeText}</span>}
+              </div>
+            )
           }}
           events={events}
           datesSet={(arg) => {

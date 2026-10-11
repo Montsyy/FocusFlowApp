@@ -52,9 +52,15 @@
    - Perbaikan Bar Reality Check: Mengoreksi bug visual di mana 0 jam tugas menampilkan bar 15% (karena evaluasi `ratioPercent || 15`). Sekarang saat 0 jam, bar benar-benar kosong (`width: 0%`) dan prop default diubah dari 90 menjadi 0 menit.
    - Penghapusan Human Agency Score: Menghilangkan komponen `HumanScore` dari antarmuka dashboard agar tampilan kolom metrik lebih ringkas dan fokus.
    - Peningkatan Padding Layout Kanan: Menambahkan padding `lg:pl-3` dan `gap-6` pada kolom kanan dashboard (`DashboardShell.tsx`) serta memperluas padding internal kartu (`p-5 sm:p-6`) pada `RealityCheck.tsx`, `EnergyCheckin.tsx`, dan kartu Jadwal Tetap.
-7. Pengujian Vitest Lengkap (`lib/ai/index.test.ts` & `components/RealityCheck.test.tsx`):
+7. Redesain Layout Kalender (Google Calendar Style & Slider Terisolasi):
+   - Mengubah layout header kalender menjadi urutan Minggu-Sabtu (`SUN 11` ... `SAT 17`) dengan nama hari kapital dan angka tanggal besar bersih sesuai desain terlampir.
+   - Menambahkan indikator zona waktu `GMT+07` pada sel pojok kiri atas tepat di atas kolom waktu.
+   - Mengubah format penanda slot waktu menjadi format 12 jam AM/PM (`1 AM`, `2 AM`, ..., `12 PM`, `1 PM`).
+   - Menerapkan slider/scrollbar vertikal yang terisolasi khusus di dalam kartu kalender (`height: 100%`, `h-[740px]`), dengan header hari tetap terkunci (*pinned*), dan posisi gulir awal otomatis di jam 07:00 AM sehingga tidak menggulung seluruh halaman web.
+   - Menghilangkan warna kuning bawaan pada kolom hari ini menjadi latar belakang putih/transparan bersih.
+8. Pengujian Vitest Lengkap (`lib/ai/index.test.ts` & `components/RealityCheck.test.tsx`):
    - 62 pengujian unit lulus (26 AI tests, 4 RealityCheck tests, 14 scheduler tests, 13 validations, 3 ics parser, 2 supabase client).
-8. Seluruh kode mematuhi aturan tanpa komentar (zero comments) dan lolos seluruh quality gate: `lint` (0 error, 0 warning), `typecheck` (0 error), `test` (62 tests passed).
+9. Seluruh kode mematuhi aturan tanpa komentar (zero comments) dan lolos seluruh quality gate: `lint` (0 error, 0 warning), `typecheck` (0 error), `test` (62 tests passed).
 
 ### Langkah Konfigurasi Pengguna (Human Steps)
 1. Dapatkan kunci API OpenAI di [platform.openai.com](https://platform.openai.com), kunci API Google AI Studio di [aistudio.google.com](https://aistudio.google.com), atau kunci NVIDIA di [build.nvidia.com](https://build.nvidia.com).

@@ -24,3 +24,175 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* FullCalendar Google Calendar Theme & Isolated Slider */
+.fc {
+  --fc-border-color: #e5e7eb;
+  --fc-today-bg-color: transparent;
+  --fc-now-indicator-color: #ea4335;
+  font-family: inherit;
+}
+
+.dark .fc {
+  --fc-border-color: #27272a;
+}
+
+/* Ensure clean white background on today and all columns (no yellow tint) */
+.fc .fc-day-today,
+.fc td.fc-day-today,
+.fc .fc-timegrid-col.fc-day-today,
+.fc .fc-timegrid-axis,
+.fc .fc-timegrid-slot-label {
+  background: transparent !important;
+  background-color: transparent !important;
+}
+
+/* Day Header row */
+.fc .fc-col-header {
+  border-bottom: 1px solid var(--fc-border-color);
+}
+
+.fc .fc-col-header-cell {
+  border-top: none !important;
+  border-bottom: none !important;
+  border-right: none !important;
+  border-left: 1px solid var(--fc-border-color) !important;
+  background: transparent !important;
+  vertical-align: middle;
+}
+
+.fc-scrollgrid-section-header .fc-timegrid-axis {
+  width: 64px !important;
+  min-width: 64px !important;
+  max-width: 64px !important;
+  vertical-align: bottom !important;
+  border-right: 1px solid var(--fc-border-color) !important;
+}
+
+.fc-scrollgrid-section-header .fc-timegrid-axis-frame {
+  display: flex !important;
+  align-items: flex-end !important;
+  justify-content: flex-end !important;
+  padding-right: 8px !important;
+  padding-bottom: 6px !important;
+  height: 100% !important;
+  min-height: 58px !important;
+  box-sizing: border-box !important;
+}
+
+.fc-scrollgrid-section-header .fc-timegrid-axis-cushion {
+  font-size: 11px !important;
+  font-weight: 500 !important;
+  color: #71717a !important;
+  letter-spacing: -0.01em !important;
+  padding: 0 !important;
+}
+
+.dark .fc-scrollgrid-section-header .fc-timegrid-axis-cushion {
+  color: #a1a1aa !important;
+}
+
+/* Time slot labels (1 AM, 2 AM, ...) */
+.fc .fc-timegrid-slot-label {
+  width: 64px !important;
+  min-width: 64px !important;
+  max-width: 64px !important;
+  vertical-align: top !important;
+  border-top: none !important;
+  border-bottom: none !important;
+  border-right: 1px solid var(--fc-border-color) !important;
+  border-left: none !important;
+}
+
+.fc .fc-timegrid-slot-label-cushion {
+  display: inline-block !important;
+  transform: translateY(-50%) !important;
+  padding: 0 8px 0 0 !important;
+  font-size: 11px !important;
+  font-weight: 500 !important;
+  color: #71717a !important;
+  letter-spacing: -0.01em;
+}
+
+.dark .fc .fc-timegrid-slot-label-cushion {
+  color: #a1a1aa !important;
+}
+
+/* Horizontal slot lanes */
+.fc .fc-timegrid-slot {
+  height: 52px !important;
+  border-top: none !important;
+  border-bottom: 1px solid #f1f5f9 !important;
+}
+
+.dark .fc .fc-timegrid-slot {
+  border-bottom: 1px solid #27272a !important;
+}
+
+/* Vertical column lines */
+.fc .fc-timegrid-col {
+  border-left: 1px solid var(--fc-border-color) !important;
+  border-right: none !important;
+}
+
+/* Isolated slider (scrollbar) */
+.fc .fc-scroller {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 transparent;
+}
+
+.fc .fc-scroller::-webkit-scrollbar {
+  width: 8px;
+}
+
+.fc .fc-scroller::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.fc .fc-scroller::-webkit-scrollbar-thumb {
+  background-color: #cbd5e1;
+  border-radius: 9999px;
+}
+
+.fc .fc-scroller::-webkit-scrollbar-thumb:hover {
+  background-color: #94a3b8;
+}
+
+.dark .fc .fc-scroller {
+  scrollbar-color: #3f3f46 transparent;
+}
+
+.dark .fc .fc-scroller::-webkit-scrollbar-thumb {
+  background-color: #3f3f46;
+}
+
+.dark .fc .fc-scroller::-webkit-scrollbar-thumb:hover {
+  background-color: #52525b;
+}
+
+/* Event items */
+.fc .fc-timegrid-event {
+  border-radius: 8px !important;
+  padding: 3px 6px !important;
+  font-size: 11px !important;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.08);
+  border: 1px solid transparent !important;
+}
+
+.fc .fc-timegrid-event .fc-event-main {
+  padding: 1px 2px;
+}
+
+/* Now indicator */
+.fc .fc-timegrid-now-indicator-line {
+  border-color: #ea4335 !important;
+  border-width: 2px !important;
+  z-index: 15 !important;
+}
+
+.fc .fc-timegrid-now-indicator-arrow {
+  border-color: #ea4335 !important;
+  border-top-color: transparent !important;
+  border-bottom-color: transparent !important;
+  z-index: 15 !important;
+}
