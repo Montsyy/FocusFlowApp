@@ -6,8 +6,8 @@
 - [x] **Phase 3: Authentication & Protected Routes**
 - [x] **Phase 4: Tasks and Fixed Events CRUD**
 - [x] **Phase 5: Calendar UI & FullCalendar Integration**
-- [ ] **Phase 6: Fixed Events & Constraint Input**
-- [ ] **Phase 7: Deterministic Scheduling Engine**
+- [x] **Phase 6: Deterministic Scheduler**
+- [ ] **Phase 7: Scheduling API & Integration**
 - [ ] **Phase 8: AI Task Parsing & Effort Estimation (Gemini Flash)**
 - [ ] **Phase 9: AI Explanation & Human Strategic Co-Pilot**
 - [ ] **Phase 10: Energy Check-in & Reality Check**
@@ -15,6 +15,56 @@
 - [ ] **Phase 12: Weekly Reflection & Analytics**
 - [ ] **Phase 13: Supabase Keepalive & Production Resilience**
 - [ ] **Phase 14: Polishing, Testing, & Deployment Preparation**
+
+---
+
+## Log Fase 6: Deterministic Scheduler
+
+### Item Selesai
+1. Pembuatan modul perhitungan prioritas murni di `lib/scheduler/priority.ts` dengan rumus `urgensi * 0.4 + kepentingan * 0.3 + kesulitan * 0.2 + progres_tertunda * 0.1` ternormalisasi 0..1, di mana urgensi meningkat seiring mendekatnya deadline dan nilai 100% deterministik.
+2. Pembuatan modul grid waktu dan slot di `lib/scheduler/slots.ts` dengan grid 30 menit mingguan dalam batasan jam aktif harian, pemetaan jendela energi (`pagi` 06:00-12:00, `siang` 12:00-18:00, `malam` 18:00-23:00) berbobot skor input (default 3), deteksi tumpang-tindih (*overlap*), dan verifikasi *buffer* 10 menit antar-blok.
+3. Pembuatan mesin penjadwalan deterministik utama di `lib/scheduler/index.ts` (`schedule`):
+   - Menerima input: `{ tasks, fixedEvents, existingBlocks, energy, weekStart, activeHours, now }`.
+   - Mengembalikan output: `{ blocks, unplaced, totalRequiredMinutes, totalAvailableMinutes }`.
+   - Blok terawetkan (*preserved blocks*, yang dikunci atau dimodifikasi manusia) tetap utuh tanpa disentuh.
+   - Buffer minimal 10 menit ditegakkan antar setiap blok berurutan.
+   - Batas maksimal kerja tugas harian (*daily cap*) 6 jam (360 menit) dipatuhi secara ketat.
+   - Tugas berstatus `"selesai"` atau `"done"` dilewati secara otomatis.
+   - Tugas dengan kesulitan >= 4 diprioritaskan masuk ke jendela energi tertinggi.
+   - Tugas dengan `can_split: true` dibagi menjadi sesi-sesi maksimal 90 menit.
+   - Tugas yang tidak muat dialokasikan ke daftar `unplaced` disertai alasan jelas berbahasa Indonesia (`tidak muat`, `melewati deadline`, `melebihi batas harian`).
+   - Input yang sama dijamin selalu menghasilkan output yang identik (100% deterministik).
+   - Modul sepenuhnya murni: nol impor dari Supabase, Next.js, maupun pustaka AI.
+4. Pembuatan rangkaian unit test komprehensif di `lib/scheduler/index.test.ts` menggunakan Vitest (14 test case) yang mencakup:
+   - Tanpa tumpang-tindih (*no overlaps*).
+   - Kepatuhan tenggat waktu (*deadline respected*).
+   - Preservasi blok terkunci/diedit manusia (*preserved blocks untouched*).
+   - Kepatuhan buffer 10 menit antar-blok (*buffer respected*).
+   - Kepatuhan batas kerja harian 6 jam (*daily cap respected*).
+   - Penempatan tugas sulit di jendela energi tertinggi (*hard tasks in high energy windows*).
+   - Pembagian sesi tugas maksimal 90 menit (*splitting behavior*).
+   - Pengabaian tugas yang sudah selesai (*completed tasks skipped*).
+   - Alasan unplaced yang tepat (*unplaced reasons*).
+   - Konsistensi keluaran deterministik (*deterministic output*).
+   - Kasus-kasus ekstrem berbasis tabel (*table-driven edge cases*: minggu kosong, minggu penuh terblokir total, deadline masa lalu).
+5. Seluruh kode sumber bersih tanpa komentar (zero comments) dan lolos seluruh quality gate: `lint` (0 error), `typecheck` (0 error), `test` (32 tests passed), dan `build` (13 routes compiled).
+
+### File yang Dibuat atau Diubah
+- `lib/scheduler/priority.ts`
+- `lib/scheduler/slots.ts`
+- `lib/scheduler/index.ts`
+- `lib/scheduler/index.test.ts`
+- `PROGRESS.md`
+
+### Keputusan Desain / Teknis
+- Mengisolasi seluruh logika penjadwalan sebagai fungsi murni (*pure functions*) independen tanpa dependensi jaringan atau basis data, sehingga mudah diuji, bebas efek samping, dan aman digunakan baik di server route maupun client-side.
+- Menggunakan tiebreaker deterministik bertingkat (prioritas -> deadline terawal -> judul alfabetis -> id unik) untuk memastikan konsistensi penempatan antar berbagai pemanggilan.
+
+### Masalah yang Diketahui (Known Issues)
+- Tidak ada isu yang belum terselesaikan pada modul penjadwal deterministik.
+
+### Fase Berikutnya
+- **Phase 7: Scheduling API & Integration**
 
 ---
 
