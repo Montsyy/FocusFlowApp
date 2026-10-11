@@ -17,6 +17,9 @@ export function TaskInput({ initialData, isOpen, onClose, onSave }: TaskInputPro
   const supabase = createBrowserClient()
   const { showToast } = useToast()
 
+  const [aiPrompt, setAiPrompt] = useState('')
+  const [aiLoading, setAiLoading] = useState(false)
+
   const [judul, setJudul] = useState(initialData?.judul ?? '')
   const [deadline, setDeadline] = useState(
     initialData?.deadline ? initialData.deadline.substring(0, 16) : ''
@@ -34,6 +37,61 @@ export function TaskInput({ initialData, isOpen, onClose, onSave }: TaskInputPro
 
   if (!isOpen) {
     return null
+  }
+
+  async function handleAiParse() {
+    if (!aiPrompt.trim()) return
+    setAiLoading(true)
+    setErrorMsg(null)
+
+    try {
+      const res = await fetch('/api/parse-task', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          prompt: aiPrompt,
+          currentDate: new Date().toISOString(),
+        }),
+      })
+
+      if (!res.ok) {
+        throw new Error('Gagal menganalisis tugas')
+      }
+
+      const json = await res.json()
+      const data = json.data
+      const meta = json.meta
+
+      if (meta?.fallbackUsed) {
+        showToast('Beralih ke model cadangan', 'info')
+      } else {
+        showToast('Tugas berhasil diuraikan oleh AI!', 'success')
+      }
+
+      if (data) {
+        if (data.title) setJudul(data.title)
+        if (data.deadline) {
+          try {
+            const d = new Date(data.deadline)
+            const pad = (n: number) => String(n).padStart(2, '0')
+            const localStr = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
+            setDeadline(localStr)
+          } catch {
+            setDeadline(data.deadline.substring(0, 16))
+          }
+        }
+        if (data.estimated_minutes) setDurasiMenit(data.estimated_minutes)
+        if (data.difficulty) setKesulitan(data.difficulty)
+        if (data.importance) setKepentingan(data.importance)
+        if (typeof data.can_split === 'boolean') setCanSplit(data.can_split)
+        if (data.suggested_sessions) setSesiDisarankan(data.suggested_sessions)
+      }
+    } catch {
+      setJudul(aiPrompt)
+      showToast('AI tidak dapat memproses, silakan lengkapi formulir manual', 'error')
+    } finally {
+      setAiLoading(false)
+    }
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -134,6 +192,40 @@ export function TaskInput({ initialData, isOpen, onClose, onSave }: TaskInputPro
         {errorMsg && (
           <div className="mt-4 rounded-xl border border-red-200 bg-red-50 p-3 text-xs text-red-700 dark:border-red-900/50 dark:bg-red-950/50 dark:text-red-300">
             {errorMsg}
+          </div>
+        )}
+
+        {!initialData && (
+          <div className="mt-4 rounded-xl border border-indigo-100 bg-indigo-50/50 p-3.5 dark:border-indigo-900/40 dark:bg-indigo-950/20">
+            <label className="block text-xs font-bold text-indigo-900 dark:text-indigo-200">
+              ✨ Analisis Cepat dengan AI
+            </label>
+            <p className="mt-0.5 text-[11px] text-zinc-500 dark:text-zinc-400">
+              Ketik deskripsi tugas bebas (contoh: &quot;Laporan praktikum 2 jam deadline besok sore penting sulit&quot;)
+            </p>
+            <div className="mt-2 flex gap-2">
+              <input
+                type="text"
+                value={aiPrompt}
+                onChange={(e) => setAiPrompt(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault()
+                    void handleAiParse()
+                  }
+                }}
+                placeholder="Tulis deskripsi tugas..."
+                className="flex-1 rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-xs text-zinc-900 focus:border-indigo-500 focus:outline-none dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
+              />
+              <button
+                type="button"
+                disabled={aiLoading || !aiPrompt.trim()}
+                onClick={handleAiParse}
+                className="rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-indigo-500 disabled:opacity-50 transition-colors"
+              >
+                {aiLoading ? 'Menganalisis...' : 'Analisis AI'}
+              </button>
+            </div>
           </div>
         )}
 

@@ -1,3 +1,1 @@
-export function getGeminiClient() {
-  return null
-}
+export { callGemini } from './providers/gemini'

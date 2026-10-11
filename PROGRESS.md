@@ -7,7 +7,7 @@
 - [x] **Phase 4: Tasks and Fixed Events CRUD**
 - [x] **Phase 5: Calendar UI & FullCalendar Integration**
 - [x] **Phase 6: Deterministic Scheduler**
-- [ ] **Phase 7: Scheduling API & Integration**
+- [x] **Phase 7: Multi-Provider AI with Automatic Failover**
 - [ ] **Phase 8: AI Task Parsing & Effort Estimation (Gemini Flash)**
 - [ ] **Phase 9: AI Explanation & Human Strategic Co-Pilot**
 - [ ] **Phase 10: Energy Check-in & Reality Check**
@@ -15,6 +15,73 @@
 - [ ] **Phase 12: Weekly Reflection & Analytics**
 - [ ] **Phase 13: Supabase Keepalive & Production Resilience**
 - [ ] **Phase 14: Polishing, Testing, & Deployment Preparation**
+
+---
+
+## Log Fase 7: Multi-Provider AI with Automatic Failover
+
+### Item Selesai
+1. Pembuatan arsitektur multi-provider AI di `lib/ai/`:
+   - `types.ts`: Mendefinisikan tipe `AiTarget`, `AiRequest`, `AiResult`, serta typed errors: `RateLimitError` (cakupan `rpm` dan `rpd` dengan `retryAfterMs`), `AuthError`, `ServerError`, `TimeoutError`, `InvalidOutputError`, dan `AllProvidersFailedError` (tanpa membocorkan kunci rahasia).
+   - `config.ts`: Parsing `AI_CHAIN` (`gemini:gemini-2.5-flash,nvidia:meta/llama-3.3-70b-instruct`), daftar API keys (`GEMINI_API_KEYS`, `NVIDIA_API_KEYS`, `GEMINI_API_KEY`), `NVIDIA_BASE_URL`, konfigurasi timeout & budget, serta validasi Zod.
+   - `cooldown.ts`: Modul pelacak status *cooldown* memori murni berbasis Map berformat `provider:model:keyIndex` dengan injeksi *clock* untuk pengujian. Durasi: RPM (`cooldownRpmMs`), RPD (`cooldownRpdMs`), Auth (24 jam), dan Server/Timeout (15 detik).
+   - `json.ts`: Fungsi `extractJson()` yang membersihkan pagar markdown (` ```json `), mengekstrak objek/array JSON pertama seimbang, dan melempar `InvalidOutputError` jika tidak valid.
+   - `providers/gemini.ts`: Integrasi `@google/generative-ai` dengan `responseMimeType: "application/json"`, rotasi multi-kunci, dan pemetaan error (mendeteksi batas harian RPD vs per menit RPM).
+   - `providers/nvidia.ts`: Integrasi endpoint OpenAI-compatible NVIDIA NIM (`/chat/completions`), penanganan format JSON dengan fallback tanpa `response_format` saat menerima HTTP 400, pembacaan header `Retry-After`, dan pemetaan error.
+   - `router.ts`: Router cerdas `generateStructured<T>()` yang mengeksekusi kandidat sesuai urutan rantai, memeriksa status cooldown, menegakkan budget total `AI_TOTAL_BUDGET_MS` dan timeout per percobaan `AI_ATTEMPT_TIMEOUT_MS`, melakukan 1x perbaikan prompt (*repair prompt*) saat output schema tidak valid, dan mengalihkan ke model/provider berikutnya saat terjadi kegagalan.
+   - `fallback.ts`: Template fallback deterministik dalam Bahasa Indonesia untuk uraian tugas (`parseTaskFallback`), penjelasan jadwal (`explainBlockFallback`), dan refleksi mingguan (`reflectWeekFallback`).
+   - `index.ts`: Fungsi utama `parseTask`, `explainBlock`, dan `reflectWeek` dengan validasi skema Zod dan transisi otomatis ke template fallback jika seluruh provider gagal atau `DEMO_FALLBACK=true`.
+2. Verifikasi Model:
+   - Gemini: `gemini-2.5-flash` dan `gemini-1.5-flash` terverifikasi sebagai ID resmi Google AI.
+   - NVIDIA NIM: `meta/llama-3.3-70b-instruct` terverifikasi sebagai ID resmi model Meta Llama 3.3 pada katalog NVIDIA NIM.
+3. Rute API yang Dibuat & Diperbarui:
+   - `POST /api/parse-task`: Menganalisis tugas natural language, dilindungi autentikasi, mengembalikan `data` dan `meta: { provider, model, fallbackUsed, attempts }`.
+   - `POST /api/explain`: Membuat penjelasan penempatan jadwal blok, dilindungi autentikasi.
+   - `POST /api/reflect`: Menghasilkan ringkasan dan pertanyaan refleksi mingguan, dilindungi autentikasi.
+   - `GET /api/ai-status`: Mengembalikan status rantai model, model aktif, dan masa tunggu cooldown tanpa mengekspos kunci API.
+   - `POST /api/schedule`: Menghubungkan algoritma scheduler deterministik langsung dengan tabel `schedule_blocks` di Supabase untuk menempatkan daftar tugas ke kalender.
+4. Pembaruan Antarmuka Pengguna (UI):
+   - Komponen `AiStatusBadge.tsx` di header dashboard yang menampilkan model aktif (contoh: "AI: Gemini 2.5 Flash", "AI: NVIDIA Llama 3.3", atau "AI: Mode Cadangan") beserta tooltip penjelasan failover otomatis.
+   - Tombol "✨ Susun Jadwal" di header dashboard untuk memetakan tugas aktif ke kalender secara langsung.
+   - Integrasi formulir analisis AI pada `TaskInput.tsx` dengan notifikasi "Beralih ke model cadangan" saat fallback aktif.
+5. Pembaruan `.env.example`: Menambahkan seluruh variabel lingkungan multi-provider AI (`GEMINI_API_KEYS`, `NVIDIA_API_KEYS`, `NVIDIA_BASE_URL`, `AI_CHAIN`, dll).
+6. Pengujian Vitest Lengkap (`lib/ai/index.test.ts`):
+   - 17 pengujian unit lulus (total 49 pengujian di seluruh proyek) mencakup failover 429 RPM, long cooldown kuota harian RPD, rotasi kunci, penanganan 401 AuthError, timeout, perbaikan JSON, fallback NVIDIA 400, pemulihan cooldown, sanitasi kunci pada error, dan aktivasi `DEMO_FALLBACK`.
+7. Seluruh kode mematuhi aturan tanpa komentar (zero comments) dan lolos seluruh quality gate: `lint` (0 error, 0 warning), `typecheck` (0 error), `test` (49 tests passed), dan `build` (14 routes compiled).
+
+### Langkah Konfigurasi Pengguna (Human Steps)
+1. Dapatkan kunci API NVIDIA di [build.nvidia.com](https://build.nvidia.com) (kunci diawali dengan `nvapi-`).
+2. Masukkan `GEMINI_API_KEYS` (bisa beberapa kunci dipisahkan koma) dan `NVIDIA_API_KEYS` ke dalam `.env.local` untuk pengujian lokal, dan ke dalam Environment Variables di dasbor proyek Vercel untuk produksi.
+
+### File yang Dibuat atau Diubah
+- `lib/ai/types.ts`
+- `lib/ai/config.ts`
+- `lib/ai/cooldown.ts`
+- `lib/ai/json.ts`
+- `lib/ai/providers/gemini.ts`
+- `lib/ai/providers/nvidia.ts`
+- `lib/ai/router.ts`
+- `lib/ai/fallback.ts`
+- `lib/ai/index.ts`
+- `lib/ai/schemas.ts`
+- `lib/ai/gemini.ts`
+- `lib/ai/index.test.ts`
+- `app/api/parse-task/route.ts`
+- `app/api/explain/route.ts`
+- `app/api/reflect/route.ts`
+- `app/api/ai-status/route.ts`
+- `app/api/schedule/route.ts`
+- `components/AiStatusBadge.tsx`
+- `components/TaskInput.tsx`
+- `app/dashboard/DashboardShell.tsx`
+- `.env.example`
+- `PROGRESS.md`
+
+### Masalah yang Diketahui (Known Issues)
+- Tidak ada isu yang belum terselesaikan.
+
+### Fase Berikutnya
+- **Phase 8: Energy Check-in & Reality Check**
 
 ---
 

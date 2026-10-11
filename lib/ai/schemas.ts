@@ -1,8 +1,7 @@
-import { z } from 'zod'
-
-export const taskSchema = z.object({
-  title: z.string(),
-  estimatedMinutes: z.number().optional(),
-})
-
-export type ParsedTask = z.infer<typeof taskSchema>
+export {
+  explainSchema,
+  parseTaskSchema,
+  parseTaskSchema as taskSchema,
+  reflectSchema,
+} from './index'
+export type { ParsedTaskResult as ParsedTask } from './fallback'

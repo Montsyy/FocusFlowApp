@@ -13,6 +13,7 @@ import { BlockDetail, type SelectedEventData } from '@/components/BlockDetail'
 import { EnergyCheckin } from '@/components/EnergyCheckin'
 import { RealityCheck } from '@/components/RealityCheck'
 import { HumanScore } from '@/components/HumanScore'
+import { AiStatusBadge } from '@/components/AiStatusBadge'
 import type { Task, FixedEvent, ScheduleBlock } from '@/lib/types'
 
 interface DashboardShellProps {
@@ -28,6 +29,7 @@ function DashboardContentInner({ userNama, userEmail }: DashboardShellProps) {
   const [mainView, setMainView] = useState<'dashboard' | 'fixed_events'>('dashboard')
   const [mobileTab, setMobileTab] = useState<'tasks' | 'calendar' | 'metrics'>('calendar')
   const [loggingOut, setLoggingOut] = useState(false)
+  const [scheduling, setScheduling] = useState(false)
 
   const [tasks, setTasks] = useState<Task[]>([])
   const [loadingTasks, setLoadingTasks] = useState(true)
@@ -169,6 +171,35 @@ function DashboardContentInner({ userNama, userEmail }: DashboardShellProps) {
     })
   }
 
+  async function handleAutoSchedule() {
+    setScheduling(true)
+    try {
+      const res = await fetch('/api/schedule', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      })
+      if (!res.ok) {
+        throw new Error('Gagal menyusun jadwal otomatis')
+      }
+      const data = await res.json()
+      if (data.blocks) {
+        setScheduleBlocks(data.blocks)
+        const count = data.blocks.length
+        const unplacedCount = data.unplaced?.length ?? 0
+        if (unplacedCount > 0) {
+          showToast(`${count} blok terjadwal. ${unplacedCount} tugas belum muat.`, 'info')
+        } else {
+          showToast(`${count} blok tugas berhasil dijadwalkan ke kalender! 🎉`, 'success')
+        }
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Gagal menyusun jadwal'
+      showToast(msg, 'error')
+    } finally {
+      setScheduling(false)
+    }
+  }
+
   const totalEstimatedMinutes = tasks
     .filter((t) => t.status !== 'done')
     .reduce((acc, t) => acc + (t.durasi_menit ?? 60), 0)
@@ -218,6 +249,18 @@ function DashboardContentInner({ userNama, userEmail }: DashboardShellProps) {
           </div>
 
           <div className="flex items-center gap-3">
+            <AiStatusBadge />
+
+            <button
+              type="button"
+              disabled={scheduling}
+              onClick={handleAutoSchedule}
+              className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-indigo-600 to-blue-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:from-indigo-500 hover:to-blue-500 disabled:opacity-50 transition-all"
+            >
+              <span>✨</span>
+              <span>{scheduling ? 'Menyusun...' : 'Susun Jadwal'}</span>
+            </button>
+
             <div className="hidden sm:block text-right">
               <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
                 Halo, {userNama}
