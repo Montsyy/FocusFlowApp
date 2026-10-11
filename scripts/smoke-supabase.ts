@@ -1,8 +1,13 @@
+import { loadEnvConfig } from '@next/env'
 import { createClient } from '@supabase/supabase-js'
+
+loadEnvConfig(process.cwd())
 
 async function smokeTest() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  const key =
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
 
   if (!url || !key) {
     process.stdout.write('Kredensial Supabase belum lengkap di environment.\n')
