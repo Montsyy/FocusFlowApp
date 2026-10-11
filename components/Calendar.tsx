@@ -169,7 +169,7 @@ export function Calendar({
           slotMaxTime="24:00:00"
           scrollTime="07:00:00"
           allDaySlot={false}
-          nowIndicator={true}
+          nowIndicator={false}
           height="100%"
           expandRows={true}
           headerToolbar={false}
