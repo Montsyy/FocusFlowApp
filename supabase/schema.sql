@@ -1,0 +1,4 @@
+create table if not exists users_profile_placeholder (
+  id uuid primary key default gen_random_uuid(),
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
