@@ -8,12 +8,15 @@ import interactionPlugin from '@fullcalendar/interaction'
 import idLocale from '@fullcalendar/core/locales/id'
 import type { FixedEvent, ScheduleBlock, Task } from '@/lib/types'
 import type { SelectedEventData } from './BlockDetail'
+import { CalendarToolbar } from './CalendarToolbar'
 
 interface CalendarProps {
   fixedEvents: FixedEvent[]
   scheduleBlocks: ScheduleBlock[]
   tasks: Task[]
   onSelectEvent: (event: SelectedEventData) => void
+  initialDate?: string
+  onWeekChange?: (weekStart: string, title: string) => void
 }
 
 export function Calendar({
@@ -21,9 +24,14 @@ export function Calendar({
   scheduleBlocks,
   tasks,
   onSelectEvent,
+  initialDate,
+  onWeekChange,
 }: CalendarProps) {
   const calendarRef = useRef<FullCalendar | null>(null)
   const [weekTitle, setWeekTitle] = useState('')
+  const [currentWeekStart, setCurrentWeekStart] = useState<string>(
+    initialDate || new Date().toISOString().split('T')[0]
+  )
 
   useEffect(() => {
     function setTz() {
@@ -103,63 +111,20 @@ export function Calendar({
 
   return (
     <div className="flex flex-col h-[740px] rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm sm:p-5 dark:border-zinc-800 dark:bg-zinc-900">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-zinc-200 dark:border-zinc-800">
-        <div className="flex items-center gap-2">
-          <div className="flex items-center rounded-xl bg-zinc-100 p-1 dark:bg-zinc-800">
-            <button
-              type="button"
-              onClick={handlePrev}
-              title="Minggu Sebelumnya"
-              className="rounded-lg px-2.5 py-1 text-xs font-bold text-zinc-700 hover:bg-white hover:shadow-sm dark:text-zinc-300 dark:hover:bg-zinc-700"
-            >
-              ◀
-            </button>
-            <button
-              type="button"
-              onClick={handleToday}
-              className="rounded-lg px-3 py-1 text-xs font-semibold text-zinc-700 hover:bg-white hover:shadow-sm dark:text-zinc-300 dark:hover:bg-zinc-700"
-            >
-              Hari Ini
-            </button>
-            <button
-              type="button"
-              onClick={handleNext}
-              title="Minggu Berikutnya"
-              className="rounded-lg px-2.5 py-1 text-xs font-bold text-zinc-700 hover:bg-white hover:shadow-sm dark:text-zinc-300 dark:hover:bg-zinc-700"
-            >
-              ▶
-            </button>
-          </div>
-
-          <span className="text-sm font-bold text-zinc-900 dark:text-zinc-100 capitalize">
-            {weekTitle}
-          </span>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2 text-[11px] font-medium text-zinc-600 dark:text-zinc-400">
-          <span className="inline-flex items-center gap-1.5">
-            <span className="h-2.5 w-2.5 rounded-full bg-slate-500" />
-            Jadwal Tetap
-          </span>
-          <span className="inline-flex items-center gap-1.5">
-            <span className="h-2.5 w-2.5 rounded-full bg-blue-500" />
-            Rencana AI
-          </span>
-          <span className="inline-flex items-center gap-1.5">
-            <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
-            Diubah Pengguna
-          </span>
-          <span className="inline-flex items-center gap-1">
-            🔒 Terkunci
-          </span>
-        </div>
-      </div>
+      <CalendarToolbar
+        weekTitle={weekTitle}
+        onPrev={handlePrev}
+        onNext={handleNext}
+        onToday={handleToday}
+        currentWeekStart={currentWeekStart}
+      />
 
       <div className="mt-3 flex-1 min-h-0 overflow-hidden">
         <FullCalendar
           ref={calendarRef}
           plugins={[timeGridPlugin, dayGridPlugin, interactionPlugin]}
           initialView="timeGridWeek"
+          initialDate={initialDate}
           locales={[idLocale]}
           locale="id"
           firstDay={0}
@@ -234,6 +199,9 @@ export function Calendar({
           events={events}
           datesSet={(arg) => {
             setWeekTitle(arg.view.title)
+            const iso = arg.start.toISOString().split('T')[0]
+            setCurrentWeekStart(iso)
+            onWeekChange?.(iso, arg.view.title)
           }}
           eventClick={(info) => {
             const props = info.event.extendedProps

@@ -1,8 +1,11 @@
 import { z } from 'zod'
 import {
+  batchExplainFallback,
   explainBlockFallback,
   parseTaskFallback,
   reflectWeekFallback,
+  type BatchExplainItem,
+  type BatchExplainResult,
   type ExplainBlockContext,
   type ExplainBlockResult,
   type ParsedTaskResult,
@@ -31,6 +34,15 @@ export const parseTaskSchema = z.object({
 
 export const explainSchema = z.object({
   reason: z.string(),
+})
+
+export const batchExplainSchema = z.object({
+  reasons: z.array(
+    z.object({
+      id: z.string(),
+      reason: z.string(),
+    })
+  ),
 })
 
 export const reflectSchema = z.object({
@@ -125,6 +137,62 @@ Level energi pengguna: ${context.userEnergy ?? 3}/5`
     }
   } catch {
     const fallbackData = explainBlockFallback(context)
+    return {
+      data: fallbackData,
+      provider: 'fallback',
+      model: 'template',
+      attempts: 0,
+      fallbackUsed: true,
+    }
+  }
+}
+
+export async function batchExplainBlocks(
+  items: BatchExplainItem[],
+  options?: RouterOptions
+): Promise<AiExecutionResult<BatchExplainResult>> {
+  if (items.length === 0) {
+    return {
+      data: { reasons: [] },
+      provider: 'fallback',
+      model: 'template',
+      attempts: 0,
+      fallbackUsed: true,
+    }
+  }
+
+  const systemInstruction = `Kamu adalah asisten AI yang menjelaskan alasan penempatan jadwal belajar mahasiswa.
+Berikan alasan singkat (1-2 kalimat) yang bersahabat, kontekstual, dan memotivasi untuk setiap blok jadwal dalam Bahasa Indonesia.`
+
+  const prompt = `Berikut daftar blok jadwal yang perlu dijelaskan:
+${JSON.stringify(items, null, 2)}
+
+Kembalikan format JSON:
+{
+  "reasons": [
+    { "id": "id-blok", "reason": "Alasan penempatan..." }
+  ]
+}`
+
+  try {
+    const result = await generateStructured<BatchExplainResult>(
+      {
+        system: systemInstruction,
+        prompt,
+        schema: batchExplainSchema,
+      },
+      options
+    )
+
+    return {
+      data: result.data,
+      provider: result.provider,
+      model: result.model,
+      attempts: result.attempts,
+      fallbackUsed: false,
+    }
+  } catch {
+    const fallbackData = batchExplainFallback(items)
     return {
       data: fallbackData,
       provider: 'fallback',

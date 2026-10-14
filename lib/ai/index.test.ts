@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
+  batchExplainBlocks,
   extractJson,
   generateStructured,
   isCoolingDown,
@@ -663,6 +664,68 @@ describe('Multi-provider AI System', () => {
 
       expect(JSON.parse(output)).toEqual({ greeting: 'dari gemma', count: 26 })
       expect(mockGeminiGenerateContent).toHaveBeenCalledTimes(1)
+    })
+  })
+
+  describe('batchExplainBlocks', () => {
+    it('returns empty reasons if given an empty list', async () => {
+      const result = await batchExplainBlocks([])
+      expect(result.data.reasons).toEqual([])
+      expect(result.fallbackUsed).toBe(true)
+    })
+
+    it('generates reasons via structured router call', async () => {
+      mockGeminiGenerateContent.mockResolvedValueOnce({
+        response: {
+          text: () =>
+            JSON.stringify({
+              reasons: [
+                { id: 'b1', reason: 'Alasan belajar pagi' },
+                { id: 'b2', reason: 'Alasan belajar sore' },
+              ],
+            }),
+        },
+      })
+
+      const items = [
+        {
+          id: 'b1',
+          taskTitle: 'Kalkulus',
+          scheduledTime: 'Senin, 08:00 - 09:30',
+          energyWindow: 'pagi',
+          userEnergy: 5,
+        },
+        {
+          id: 'b2',
+          taskTitle: 'Fisika',
+          scheduledTime: 'Senin, 14:00 - 15:30',
+          energyWindow: 'siang',
+          userEnergy: 3,
+        },
+      ]
+
+      const result = await batchExplainBlocks(items, { config: mockConfig })
+      expect(result.fallbackUsed).toBe(false)
+      expect(result.data.reasons).toHaveLength(2)
+      expect(result.data.reasons[0].reason).toBe('Alasan belajar pagi')
+    })
+
+    it('falls back to template reason when AI fails', async () => {
+      mockGeminiGenerateContent.mockRejectedValueOnce(new Error('Quota reached'))
+
+      const items = [
+        {
+          id: 'b1',
+          taskTitle: 'Kalkulus',
+          scheduledTime: 'Senin, 08:00 - 09:30',
+          energyWindow: 'pagi',
+        },
+      ]
+
+      const result = await batchExplainBlocks(items, { config: mockConfig })
+      expect(result.fallbackUsed).toBe(true)
+      expect(result.provider).toBe('fallback')
+      expect(result.data.reasons[0].reason).toContain('Kalkulus')
     })
   })
 })

@@ -1,4 +1,5 @@
 export {
+  batchExplainSchema,
   explainSchema,
   parseTaskSchema,
   parseTaskSchema as taskSchema,

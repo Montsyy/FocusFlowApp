@@ -52,6 +52,37 @@ export function explainBlockFallback(context: ExplainBlockContext): ExplainBlock
   }
 }
 
+export interface BatchExplainItem {
+  id: string
+  taskTitle: string
+  scheduledTime: string
+  energyWindow: string
+  userEnergy?: number
+  difficulty?: number
+  importance?: number
+}
+
+export interface BatchExplainResult {
+  reasons: {
+    id: string
+    reason: string
+  }[]
+}
+
+export function batchExplainFallback(items: BatchExplainItem[]): BatchExplainResult {
+  return {
+    reasons: items.map((item) => ({
+      id: item.id,
+      reason: explainBlockFallback({
+        taskTitle: item.taskTitle,
+        scheduledTime: item.scheduledTime,
+        energyWindow: item.energyWindow,
+        userEnergy: item.userEnergy,
+      }).reason,
+    })),
+  }
+}
+
 export function reflectWeekFallback(context: ReflectWeekContext): ReflectWeekResult {
   const completed = context.completedTasks ?? 0
   const total = context.totalTasks ?? 0

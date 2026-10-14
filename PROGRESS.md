@@ -8,13 +8,81 @@
 - [x] **Phase 5: Calendar UI & FullCalendar Integration**
 - [x] **Phase 6: Deterministic Scheduler**
 - [x] **Phase 7: Multi-Provider AI with Automatic Failover**
-- [ ] **Phase 8: AI Task Parsing & Effort Estimation (Gemini Flash)**
+- [x] **Phase 8: Schedule Generation and Energy Check-in**
 - [ ] **Phase 9: AI Explanation & Human Strategic Co-Pilot**
 - [ ] **Phase 10: Energy Check-in & Reality Check**
 - [ ] **Phase 11: Drag-and-Drop Override & Human Agency**
 - [ ] **Phase 12: Weekly Reflection & Analytics**
 - [ ] **Phase 13: Supabase Keepalive & Production Resilience**
 - [ ] **Phase 14: Polishing, Testing, & Deployment Preparation**
+
+---
+
+## Log Fase 8: Schedule Generation and Energy Check-in
+
+### Item Selesai
+1. Pembuatan formulir interaktif `components/EnergyCheckin.tsx`:
+   - Tiga slider intuitif: Pagi (06:00 - 12:00), Siang (12:00 - 18:00), dan Malam (18:00 - 23:00) bernilai 1 hingga 5 dengan penanda tingkatan level energi.
+   - Pilihan chip kondisi mood (Fokus, Semangat, Tenang, Produktif, Lelah, Kewalahan).
+   - Sinkronisasi persistensi basis data ke tabel `energy_logs` hari ini dengan mekanisme `upsert` pada `(user_id, tanggal)`.
+   - Tombol simpan manual dengan indikator pemuatan dan auto-save debounced otomatis.
+2. Implementasi rute `POST /api/schedule`:
+   - Memuat daftar tugas aktif, jadwal tetap, blok jadwal terawetkan (*preserved blocks*), log energi hari ini, serta jam aktif profil pengguna untuk minggu yang dipilih.
+   - Menjalankan algoritma penjadwalan deterministik dengan mempertimbangkan kapasitas energi.
+   - Eksekusi non-blocking jadwal: blok jadwal langsung ditempatkan dan disimpan terlebih dahulu ke basis data Supabase dengan alasan template dasar, menjamin persistensi jadwal 100% tanpa risiko terblokir oleh latensi AI.
+   - Mengisi `alasan_ai` menggunakan failover router dengan batasan waktu ketat (*strict time budget* 4 detik via `Promise.race`), dan mempertahankan alasan template jika waktu habis atau terjadi kegagalan.
+   - Mengembalikan respons terstruktur `{ blocks, unplaced, capacity, totalRequiredMinutes, totalAvailableMinutes, meta: { provider, model, fallbackUsed } }`.
+   - Menjaga blok terawetkan (`dikunci: true` atau `dimodifikasi_manusia: true`) tetap utuh.
+   - Bersifat idempoten murni: pemanggilan berulang dengan data yang sama tidak menduplikasi blok jadwal.
+3. Penjelasan AI Terkelompok (*Batched AI Explanations* via Failover Router):
+   - Modul `batchExplainBlocks` di `lib/ai/index.ts` mengeksekusi router `generateStructured` dengan dukungan multi-provider (Gemini -> NVIDIA -> OpenAI).
+   - Menghasilkan alasan penempatan untuk seluruh blok sekaligus dalam satu panggilan batched.
+   - Fallback otomatis ke template deterministik berbahasa Indonesia saat provider AI mengalami kegagalan, kehabisan kuota, atau batas waktu terlampaui.
+4. Pengayaan Komponen Notifikasi `components/Toast.tsx`:
+   - Mendukung tombol aksi atau tautan navigasi langsung (misal: "Lihat di Kalender →") dengan auto-dismiss yang diperpanjang.
+5. Pembuatan Context Bersama `components/PlannerContext.tsx`:
+   - Menyediakan hook `usePlanner` dan komponen `PlannerProvider` yang menyelaraskan state blok jadwal, status generasi asinkron (`isGenerating`), daftar `unplacedTasks`, `capacity`, dan metadata AI.
+6. Pembuatan Komponen Cepat & Toolbar:
+   - `components/QuickActions.tsx`: Kartu aksi cepat di `/dashboard` dengan tombol utama "✨ Susun Jadwal Otomatis" beranimasi putar (*loading spinner*) dan tautan langsung ke kalender penuh.
+   - `components/CalendarToolbar.tsx`: Navigasi mingguan terpadu dengan tombol "Susun Jadwal" yang memanggil `PlannerProvider.generateSchedule`.
+   - `components/UnplacedTaskList.tsx`: Menampilkan daftar tugas yang tidak muat atau melewati deadline secara elegan.
+7. Pembuatan Halaman Kalender Penuh `/dashboard/kalender`:
+   - Rute dinamis yang mendukung parameter `?minggu=YYYY-MM-DD`.
+   - Dilindungi otentikasi Supabase dan menampilkan kalender lengkap dengan toolbar interaktif, indikator zona waktu, dan detail blok drawer.
+8. Pengujian Unit & Integrasi Komprehensif:
+   - `app/api/schedule/route.test.ts`: 6 pengujian integrasi yang memvalidasi otentikasi 401, penyimpanan jadwal terlebih dahulu, pembaruan `alasan_ai` via failover router, respons `meta` ({ provider, model, fallbackUsed }), penanganan batas waktu ketat (*strict time budget timeout*), idempotensi tanpa duplikasi, dan preservasi blok terkunci.
+   - `components/EnergyCheckin.test.tsx` & `components/UnplacedTaskList.test.tsx`: Pengujian komponen SSR.
+   - `lib/ai/index.test.ts`: Pengujian unit fungsi `batchExplainBlocks`.
+   - 88 pengujian Vitest lulus 100%, 0 lint error, 0 warning, dan kompilasi Next.js build sukses.
+
+### File yang Dibuat atau Diubah
+- `components/EnergyCheckin.tsx`
+- `components/EnergyCheckin.test.tsx`
+- `components/PlannerContext.tsx`
+- `components/QuickActions.tsx`
+- `components/CalendarToolbar.tsx`
+- `components/UnplacedTaskList.tsx`
+- `components/UnplacedTaskList.test.tsx`
+- `components/Calendar.tsx`
+- `components/Toast.tsx`
+- `app/api/schedule/route.ts`
+- `app/api/schedule/route.test.ts`
+- `app/dashboard/DashboardShell.tsx`
+- `app/dashboard/kalender/page.tsx`
+- `app/dashboard/kalender/KalenderContent.tsx`
+- `app/dashboard/kalender/KalenderShell.tsx`
+- `lib/ai/fallback.ts`
+- `lib/ai/schemas.ts`
+- `lib/ai/index.ts`
+- `lib/ai/index.test.ts`
+- `PROGRESS.md`
+
+### Keputusan Desain / Teknis
+- Menggunakan satu pemanggilan batched AI (`batchExplainBlocks`) untuk menghasilkan alasan penempatan seluruh blok sekaligus guna menghemat kuota token, mencegah throttling RPM/RPD, dan memangkas waktu tunggu penyusunan jadwal secara signifikan.
+- Mengintegrasikan `PlannerProvider` ke dalam root dashboard dan halaman kalender untuk memastikan sinkronisasi instan antara eksekusi penjadwalan dan rendering FullCalendar tanpa reload manual.
+
+### Fase Berikutnya
+- **Phase 9: AI Explanation & Human Strategic Co-Pilot**
 
 ---
 

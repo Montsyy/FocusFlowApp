@@ -5,6 +5,9 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createBrowserClient } from '@/lib/supabase/client'
 import { ToastProvider, useToast } from '@/components/Toast'
+import { PlannerProvider, usePlanner } from '@/components/PlannerContext'
+import { QuickActions } from '@/components/QuickActions'
+import { UnplacedTaskList } from '@/components/UnplacedTaskList'
 import { TaskPanel } from '@/components/TaskPanel'
 import { TaskInput } from '@/components/TaskInput'
 import { FixedEventForm } from '@/components/FixedEventForm'
@@ -21,23 +24,36 @@ interface DashboardShellProps {
   userEmail: string
 }
 
+function getInitialWeekStart(): string {
+  const today = new Date()
+  const day = today.getDay()
+  const sunday = new Date(today)
+  sunday.setDate(today.getDate() - day)
+  return sunday.toISOString().split('T')[0]
+}
+
 function DashboardContentInner({ userNama, userEmail }: DashboardShellProps) {
   const router = useRouter()
   const supabase = createBrowserClient()
   const { showToast } = useToast()
+  const {
+    scheduleBlocks,
+    setScheduleBlocks,
+    unplacedTasks,
+    isGenerating,
+    generateSchedule,
+  } = usePlanner()
 
   const [mainView, setMainView] = useState<'dashboard' | 'fixed_events'>('dashboard')
   const [mobileTab, setMobileTab] = useState<'tasks' | 'calendar' | 'metrics'>('calendar')
   const [loggingOut, setLoggingOut] = useState(false)
-  const [scheduling, setScheduling] = useState(false)
+  const [currentMinggu, setCurrentMinggu] = useState<string>(getInitialWeekStart())
 
   const [tasks, setTasks] = useState<Task[]>([])
   const [loadingTasks, setLoadingTasks] = useState(true)
 
   const [fixedEvents, setFixedEvents] = useState<FixedEvent[]>([])
   const [loadingEvents, setLoadingEvents] = useState(true)
-
-  const [scheduleBlocks, setScheduleBlocks] = useState<ScheduleBlock[]>([])
 
   const [taskModalOpen, setTaskModalOpen] = useState(false)
   const [editingTask, setEditingTask] = useState<Task | null>(null)
@@ -77,7 +93,7 @@ function DashboardContentInner({ userNama, userEmail }: DashboardShellProps) {
     return () => {
       isMounted = false
     }
-  }, [supabase, showToast])
+  }, [supabase, showToast, setScheduleBlocks])
 
   async function reloadTasks() {
     try {
@@ -119,40 +135,12 @@ function DashboardContentInner({ userNama, userEmail }: DashboardShellProps) {
   }
 
   async function handleAutoSchedule(options: { silent?: boolean; customSuccessMessage?: string } = {}) {
-    setScheduling(true)
-    try {
-      const res = await fetch('/api/schedule', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-      })
-      if (!res.ok) {
-        throw new Error('Gagal menyusun jadwal otomatis')
-      }
-      const data = await res.json()
-      if (data.blocks) {
-        setScheduleBlocks(data.blocks)
-        const count = data.blocks.length
-        const unplacedCount = data.unplaced?.length ?? 0
-        if (!options.silent) {
-          if (options.customSuccessMessage) {
-            showToast(options.customSuccessMessage, 'success')
-          } else if (count > 0) {
-            showToast(`${count} blok tugas berhasil dijadwalkan ke kalender! 🎉`, 'success')
-          } else if (unplacedCount > 0) {
-            showToast('Tugas belum dapat dijadwalkan karena melewati batas deadline.', 'info')
-          } else {
-            showToast('Semua jadwal sudah tersinkronisasi.', 'info')
-          }
-        }
-      }
-    } catch (err) {
-      if (!options.silent) {
-        const msg = err instanceof Error ? err.message : 'Gagal menyusun jadwal'
-        showToast(msg, 'error')
-      }
-    } finally {
-      setScheduling(false)
-    }
+    await generateSchedule({
+      weekStart: currentMinggu,
+      showCalendarLink: true,
+      currentMinggu,
+      ...options,
+    })
   }
 
   async function handleToggleTaskStatus(task: Task) {
@@ -244,7 +232,7 @@ function DashboardContentInner({ userNama, userEmail }: DashboardShellProps) {
                     : 'text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100'
                 }`}
               >
-                Dashboard & Kalender
+                Dashboard
               </button>
               <button
                 type="button"
@@ -257,6 +245,12 @@ function DashboardContentInner({ userNama, userEmail }: DashboardShellProps) {
               >
                 Jadwal Tetap ({fixedEvents.length})
               </button>
+              <Link
+                href={`/dashboard/kalender?minggu=${currentMinggu}`}
+                className="rounded-lg px-3 py-1.5 text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
+              >
+                Kalender Penuh
+              </Link>
               <Link
                 href="/dashboard/refleksi"
                 className="rounded-lg px-3 py-1.5 text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
@@ -271,12 +265,21 @@ function DashboardContentInner({ userNama, userEmail }: DashboardShellProps) {
 
             <button
               type="button"
-              disabled={scheduling}
+              disabled={isGenerating}
               onClick={() => void handleAutoSchedule()}
               className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-indigo-600 to-blue-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:from-indigo-500 hover:to-blue-500 disabled:opacity-50 transition-all"
             >
-              <span>✨</span>
-              <span>{scheduling ? 'Menyusun...' : 'Susun Jadwal'}</span>
+              {isGenerating ? (
+                <>
+                  <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                  <span>Menyusun...</span>
+                </>
+              ) : (
+                <>
+                  <span>✨</span>
+                  <span>Susun Jadwal</span>
+                </>
+              )}
             </button>
 
             <div className="hidden sm:block text-right">
@@ -332,7 +335,7 @@ function DashboardContentInner({ userNama, userEmail }: DashboardShellProps) {
                   : 'text-zinc-600'
               }`}
             >
-              Panel & Metrik
+              Aksi & Metrik
             </button>
           </div>
         )}
@@ -363,7 +366,7 @@ function DashboardContentInner({ userNama, userEmail }: DashboardShellProps) {
             </div>
 
             <div
-              className={`lg:col-span-6 ${
+              className={`lg:col-span-6 flex flex-col gap-4 ${
                 mobileTab === 'calendar' ? 'block' : 'hidden lg:block'
               }`}
             >
@@ -372,6 +375,7 @@ function DashboardContentInner({ userNama, userEmail }: DashboardShellProps) {
                 scheduleBlocks={scheduleBlocks}
                 tasks={tasks}
                 onSelectEvent={setSelectedEvent}
+                onWeekChange={(iso) => setCurrentMinggu(iso)}
               />
             </div>
 
@@ -380,6 +384,15 @@ function DashboardContentInner({ userNama, userEmail }: DashboardShellProps) {
                 mobileTab === 'metrics' ? 'block' : 'hidden lg:block'
               }`}
             >
+              <QuickActions
+                onAddTask={() => {
+                  setEditingTask(null)
+                  setTaskModalOpen(true)
+                }}
+                onManageFixedEvents={() => setMainView('fixed_events')}
+                currentMinggu={currentMinggu}
+              />
+              <UnplacedTaskList unplaced={unplacedTasks} />
               <StatCards tasks={tasks} />
               <EnergyCheckin />
               <RealityCheck totalEstimatedMinutes={totalEstimatedMinutes} />
@@ -451,7 +464,9 @@ function DashboardContentInner({ userNama, userEmail }: DashboardShellProps) {
 export default function DashboardShell(props: DashboardShellProps) {
   return (
     <ToastProvider>
-      <DashboardContentInner {...props} />
+      <PlannerProvider>
+        <DashboardContentInner {...props} />
+      </PlannerProvider>
     </ToastProvider>
   )
 }
