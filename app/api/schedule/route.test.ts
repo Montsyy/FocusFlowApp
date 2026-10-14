@@ -343,7 +343,17 @@ describe('POST /api/schedule', () => {
       dimodifikasi_manusia: false,
       alasan_ai: 'Dikunci oleh pengguna secara manual',
     }
-    inMemoryBlocks = [lockedBlock]
+    const humanBlock: ScheduleBlock = {
+      id: 'human-block-2',
+      user_id: mockUserId,
+      task_id: 'task-2',
+      mulai: '2026-10-13T09:00:00.000Z',
+      selesai: '2026-10-13T10:30:00.000Z',
+      dikunci: false,
+      dimodifikasi_manusia: true,
+      alasan_ai: 'Diubah oleh pengguna secara manual',
+    }
+    inMemoryBlocks = [lockedBlock, humanBlock]
 
     const req = new Request('http://localhost:3000/api/schedule', {
       method: 'POST',
@@ -355,8 +365,12 @@ describe('POST /api/schedule', () => {
     const json = await res.json()
 
     expect(deletedBlockIds).not.toContain('locked-block-1')
-    const preservedInResult = json.blocks.find((b: ScheduleBlock) => b.id === 'locked-block-1')
-    expect(preservedInResult).toBeDefined()
-    expect(preservedInResult.dikunci).toBe(true)
+    expect(deletedBlockIds).not.toContain('human-block-2')
+    const preservedLocked = json.blocks.find((b: ScheduleBlock) => b.id === 'locked-block-1')
+    expect(preservedLocked).toBeDefined()
+    expect(preservedLocked.dikunci).toBe(true)
+    const preservedHuman = json.blocks.find((b: ScheduleBlock) => b.id === 'human-block-2')
+    expect(preservedHuman).toBeDefined()
+    expect(preservedHuman.dimodifikasi_manusia).toBe(true)
   })
 })

@@ -7,7 +7,7 @@ import KalenderShell from './KalenderShell'
 export default async function KalenderContent({
   searchParams,
 }: {
-  searchParams?: Promise<{ minggu?: string }>
+  searchParams?: Promise<{ minggu?: string; blok?: string }>
 }) {
   await connection()
   const supabase = await createServerClient()
@@ -35,6 +35,7 @@ export default async function KalenderContent({
 
   const resolvedParams = searchParams ? await searchParams : {}
   const initialMinggu = resolvedParams?.minggu
+  const initialBlokId = resolvedParams?.blok
 
   const [{ data: tData }, { data: fData }, { data: bData }] = await Promise.all([
     supabase.from('tasks').select('*').order('created_at', { ascending: false }),
@@ -47,6 +48,7 @@ export default async function KalenderContent({
       userNama={nama}
       userEmail={user.email ?? ''}
       initialMinggu={initialMinggu}
+      initialBlokId={initialBlokId}
       initialTasks={(tData as Task[]) ?? []}
       initialFixedEvents={(fData as FixedEvent[]) ?? []}
       initialBlocks={(bData as ScheduleBlock[]) ?? []}

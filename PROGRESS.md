@@ -9,12 +9,69 @@
 - [x] **Phase 6: Deterministic Scheduler**
 - [x] **Phase 7: Multi-Provider AI with Automatic Failover**
 - [x] **Phase 8: Schedule Generation and Energy Check-in**
-- [ ] **Phase 9: AI Explanation & Human Strategic Co-Pilot**
+- [x] **Phase 9: Human Override**
 - [ ] **Phase 10: Energy Check-in & Reality Check**
 - [ ] **Phase 11: Drag-and-Drop Override & Human Agency**
 - [ ] **Phase 12: Weekly Reflection & Analytics**
 - [ ] **Phase 13: Supabase Keepalive & Production Resilience**
 - [ ] **Phase 14: Polishing, Testing, & Deployment Preparation**
+
+---
+
+## Log Fase 9: Human Override
+
+### Item Selesai
+1. Interaksi Drag & Resize FullCalendar di `/dashboard/kalender`:
+   - Mengaktifkan `editable`, `eventDrop`, dan `eventResize` dengan pembulatan interval `snapDuration="00:15:00"`.
+   - Blok jadwal yang terkunci (`dikunci: true`) otomatis dinonaktifkan dari drag & resize (`editable: false`) dan menampilkan ikon gembok 🔒.
+   - Pada saat drag drop atau resize, sistem otomatis memvalidasi apakah blok bentrok dengan jadwal tetap (`fixed_events`) menggunakan `validateFixedEventOverlap`. Jika terjadi bentrok, posisi blok langsung dibatalkan via `info.revert()` dan menampilkan toast error informatif.
+   - Jika valid, blok diperbarui di Supabase dengan atribut `mulai`, `selesai`, dan `dimodifikasi_manusia = true`.
+   - Menyediakan fitur "Urungkan" (*undo*) langsung pada toast aksi: mengembalikan waktu dan flag blok ke kondisi awal baik di basis data maupun kalender UI.
+2. Penyempurnaan `components/BlockDetail.tsx`:
+   - Menampilkan informasi lengkap tugas: durasi, tingkat kesulitan, kepentingan, deadline, jendela energi yang direkomendasikan, waktu pelaksanaan, serta `alasan_ai`.
+   - Tombol "Kunci" / "Buka kunci": mengubah status `dikunci` dan menandai `dimodifikasi_manusia = true` di Supabase & state lokal.
+   - Tombol "Hapus blok": menghapus blok dari Supabase dengan aksi toast "Urungkan" yang dapat memulihkan blok yang terhapus.
+   - Tombol "Tandai selesai": mengubah status tugas ke selesai/todo.
+   - Tombol "Setuju": menandai blok telah disetujui pengguna (`dimodifikasi_manusia = true`).
+   - Tombol "Ubah": membuka editor waktu inline langsung di modal dengan validasi bentrok jadwal tetap dan aksi toast "Urungkan".
+   - Tombol "Kenapa di sini?": memanggil rute `POST /api/explain` secara asinkron dan memperbarui `alasan_ai` di Supabase serta antarmuka kalender.
+3. Tombol "Susun ulang sisanya" di `CalendarToolbar.tsx`:
+   - Ditempatkan di samping "Susun Jadwal", memanggil `/api/schedule` dengan pesan khusus yang menginformasikan bahwa blok yang terkunci dan dimodifikasi manusia tetap dipertahankan.
+4. Pemisahan Lingkup Dashboard vs Kalender Penuh:
+   - Seluruh interaksi drag, resize, lock/unlock, edit waktu, dan delete hidup secara eksklusif di `/dashboard/kalender`.
+   - Di `/dashboard`, kalender bersifat *read-only* (`editable={false}`), dan modal `BlockDetail` menggunakan mode tampilan ringkas (`allowEdit={false}`).
+   - Menambahkan komponen baru `components/TodayAgenda.tsx` di `/dashboard`: menampilkan daftar sesi fokus hari ini dengan tombol "✓ Selesai" dan tautan navigasi langsung "Lihat ↗" yang membuka blok bersangkutan di kalender penuh (`/dashboard/kalender?minggu=...&blok=<id>`).
+   - `KalenderShell.tsx` mengenali parameter `blok` pada URL dan otomatis membuka drawer `BlockDetail` untuk blok tersebut saat halaman dimuat.
+5. Pengujian Komprehensif:
+   - `lib/scheduler/overlap.test.ts`: 8 pengujian unit untuk deteksi bentrok (tumpang tindih parsial, total, batas jam sama di hari berbeda, format ISO string).
+   - `lib/scheduler/index.test.ts`: Pengujian unit preservasi blok `dimodifikasi_manusia: true` dan kombinasi `dikunci: true` bersama blok baru.
+   - `app/api/schedule/route.test.ts`: Pengujian integrasi rute API untuk memverifikasi bahwa blok `dikunci` dan `dimodifikasi_manusia` tidak pernah dihapus dan disertakan pada hasil generasi ulang.
+   - `components/TodayAgenda.test.tsx`: Pengujian komponen `TodayAgenda` (kondisi kosong, rendering sesi hari ini, link dengan query params).
+   - 100 pengujian Vitest sukses 100%, 0 TypeScript errors, 0 ESLint errors/warnings, dan Next.js production build sukses.
+
+### File yang Dibuat atau Diubah
+- `lib/scheduler/overlap.ts`
+- `lib/scheduler/overlap.test.ts`
+- `components/BlockDetail.tsx`
+- `components/Calendar.tsx`
+- `components/CalendarToolbar.tsx`
+- `components/TodayAgenda.tsx`
+- `components/TodayAgenda.test.tsx`
+- `app/dashboard/DashboardShell.tsx`
+- `app/dashboard/kalender/page.tsx`
+- `app/dashboard/kalender/KalenderContent.tsx`
+- `app/dashboard/kalender/KalenderShell.tsx`
+- `lib/scheduler/index.test.ts`
+- `app/api/schedule/route.test.ts`
+- `PROGRESS.md`
+
+### Keputusan Desain / Teknis
+- Mengisolasi interaksi drag, resize, lock, dan delete hanya pada rute `/dashboard/kalender`, menjaga `/dashboard` tetap fokus pada eksekusi tugas harian ("Tandai selesai") melalui `TodayAgenda` dengan tautan deep-link berparameter `?blok=<id>`.
+- Inisialisasi `selectedEvent` secara *lazy* dalam `useState` pada `KalenderShell` untuk mengeliminasi *cascading render* dan mematuhi aturan ketat React `react-hooks/set-state-in-effect`.
+- Mengintegrasikan aksi "Urungkan" (*undo*) langsung ke notifikasi toast menggunakan callback closure yang merestorasi status basis data dan UI secara atomik.
+
+### Fase Berikutnya
+- **Phase 10: Energy Check-in & Reality Check**
 
 ---
 

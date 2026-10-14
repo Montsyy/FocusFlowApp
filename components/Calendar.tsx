@@ -5,7 +5,12 @@ import FullCalendar from '@fullcalendar/react'
 import timeGridPlugin from '@fullcalendar/timegrid'
 import dayGridPlugin from '@fullcalendar/daygrid'
 import interactionPlugin from '@fullcalendar/interaction'
+import type { EventResizeDoneArg } from '@fullcalendar/interaction'
+import type { EventDropArg } from '@fullcalendar/core'
 import idLocale from '@fullcalendar/core/locales/id'
+import { createBrowserClient } from '@/lib/supabase/client'
+import { useToast } from './Toast'
+import { validateFixedEventOverlap } from '@/lib/scheduler/overlap'
 import type { FixedEvent, ScheduleBlock, Task } from '@/lib/types'
 import type { SelectedEventData } from './BlockDetail'
 import { CalendarToolbar } from './CalendarToolbar'
@@ -17,6 +22,8 @@ interface CalendarProps {
   onSelectEvent: (event: SelectedEventData) => void
   initialDate?: string
   onWeekChange?: (weekStart: string, title: string) => void
+  editable?: boolean
+  onBlockChange?: (updated: ScheduleBlock, prev: ScheduleBlock) => void
 }
 
 export function Calendar({
@@ -26,8 +33,11 @@ export function Calendar({
   onSelectEvent,
   initialDate,
   onWeekChange,
+  editable = false,
+  onBlockChange,
 }: CalendarProps) {
   const calendarRef = useRef<FullCalendar | null>(null)
+  const { showToast } = useToast()
   const [weekTitle, setWeekTitle] = useState('')
   const [currentWeekStart, setCurrentWeekStart] = useState<string>(
     initialDate || new Date().toISOString().split('T')[0]
@@ -64,6 +74,8 @@ export function Calendar({
       borderColor: '#475569',
       textColor: '#FFFFFF',
       editable: false,
+      startEditable: false,
+      durationEditable: false,
       display: 'block' as const,
       extendedProps: {
         isFixed: true,
@@ -75,6 +87,7 @@ export function Calendar({
       const task = sb.task_id ? taskMap.get(sb.task_id) : undefined
       const titleText = task?.judul || sb.alasan_ai || 'Blok Jadwal'
       const displayTitle = `${sb.dikunci ? '🔒 ' : ''}${titleText}`
+      const canEdit = Boolean(editable) && !sb.dikunci
 
       return {
         id: sb.id,
@@ -84,7 +97,9 @@ export function Calendar({
         backgroundColor: sb.dimodifikasi_manusia ? '#10B981' : '#3B82F6',
         borderColor: sb.dimodifikasi_manusia ? '#059669' : '#2563EB',
         textColor: '#FFFFFF',
-        editable: false,
+        editable: canEdit,
+        startEditable: canEdit,
+        durationEditable: canEdit,
         display: 'block' as const,
         extendedProps: {
           isFixed: false,
@@ -95,7 +110,88 @@ export function Calendar({
     })
 
     return [...fixedItems, ...blockItems]
-  }, [fixedEvents, scheduleBlocks, taskMap])
+  }, [fixedEvents, scheduleBlocks, taskMap, editable])
+
+  async function handleEventChange(info: EventDropArg | EventResizeDoneArg) {
+    const block = info.event.extendedProps.block as ScheduleBlock | undefined
+    if (!block || !info.event.start) {
+      info.revert()
+      return
+    }
+
+    const start = info.event.start
+    const end =
+      info.event.end ||
+      new Date(
+        start.getTime() +
+          (new Date(block.selesai).getTime() - new Date(block.mulai).getTime())
+      )
+
+    const newStart = start.toISOString()
+    const newEnd = end.toISOString()
+
+    const overlap = validateFixedEventOverlap(newStart, newEnd, fixedEvents)
+    if (overlap.hasOverlap) {
+      info.revert()
+      showToast(
+        `Tidak dapat memindahkan: bentrok dengan "${overlap.conflictingEvent?.judul}" (${overlap.conflictingEvent?.jam_mulai.substring(0, 5)} - ${overlap.conflictingEvent?.jam_selesai.substring(0, 5)})`,
+        'error'
+      )
+      return
+    }
+
+    const prevBlock: ScheduleBlock = { ...block }
+    const updatedBlock: ScheduleBlock = {
+      ...block,
+      mulai: newStart,
+      selesai: newEnd,
+      dimodifikasi_manusia: true,
+    }
+
+    try {
+      const supabase = createBrowserClient()
+      const { error } = await supabase
+        .from('schedule_blocks')
+        .update({
+          mulai: newStart,
+          selesai: newEnd,
+          dimodifikasi_manusia: true,
+        })
+        .eq('id', block.id)
+
+      if (error) throw error
+
+      onBlockChange?.(updatedBlock, prevBlock)
+
+      showToast('Jadwal blok berhasil diperbarui 📅', 'success', {
+        label: 'Urungkan',
+        onClick: async () => {
+          try {
+            const { error: undoErr } = await supabase
+              .from('schedule_blocks')
+              .update({
+                mulai: prevBlock.mulai,
+                selesai: prevBlock.selesai,
+                dimodifikasi_manusia: prevBlock.dimodifikasi_manusia,
+              })
+              .eq('id', prevBlock.id)
+
+            if (undoErr) throw undoErr
+
+            onBlockChange?.(prevBlock, updatedBlock)
+            info.revert()
+            showToast('Perubahan jadwal diurungkan ↩️', 'info')
+          } catch {
+            showToast('Gagal mengurungkan perubahan jadwal', 'error')
+          }
+        },
+      })
+    } catch (err) {
+      info.revert()
+      const msg = err instanceof Error ? err.message : 'Gagal memperbarui jadwal'
+      showToast(msg, 'error')
+    }
+  }
 
   function handlePrev() {
     calendarRef.current?.getApi().prev()
@@ -197,6 +293,10 @@ export function Calendar({
             )
           }}
           events={events}
+          editable={editable}
+          eventDrop={(arg) => void handleEventChange(arg)}
+          eventResize={(arg) => void handleEventChange(arg)}
+          snapDuration="00:15:00"
           datesSet={(arg) => {
             setWeekTitle(arg.view.title)
             const iso = arg.start.toISOString().split('T')[0]

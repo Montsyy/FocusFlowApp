@@ -79,6 +79,32 @@ export function CalendarToolbar({
             void generateSchedule({
               weekStart: currentWeekStart,
               showCalendarLink: false,
+              customSuccessMessage:
+                'Sisa jadwal berhasil disusun ulang! Blok yang terkunci & diubah tetap dipertahankan. 🔄',
+            })
+          }
+          className="inline-flex items-center gap-1.5 rounded-xl border border-zinc-200 bg-white px-3.5 py-1.5 text-xs font-semibold text-zinc-700 shadow-sm hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700 disabled:opacity-50 transition-all"
+        >
+          {isGenerating ? (
+            <>
+              <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-zinc-500 border-t-transparent" />
+              <span>Menyusun...</span>
+            </>
+          ) : (
+            <>
+              <span>🔄</span>
+              <span>Susun Ulang Sisanya</span>
+            </>
+          )}
+        </button>
+
+        <button
+          type="button"
+          disabled={isGenerating}
+          onClick={() =>
+            void generateSchedule({
+              weekStart: currentWeekStart,
+              showCalendarLink: false,
             })
           }
           className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-indigo-600 to-blue-600 px-3.5 py-1.5 text-xs font-semibold text-white shadow-sm hover:from-indigo-500 hover:to-blue-500 disabled:opacity-50 transition-all"

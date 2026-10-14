@@ -155,6 +155,79 @@ describe('deterministic scheduler', () => {
     expect(foundPreserved?.dikunci).toBe(true)
   })
 
+  it('preserves human-edited blocks with dimodifikasi_manusia: true and avoids collision', () => {
+    const humanEdited: ScheduleBlock = {
+      id: 'human-edited-1',
+      user_id: 'user-1',
+      task_id: 'task-manual',
+      mulai: '2026-10-12T09:00:00.000Z',
+      selesai: '2026-10-12T10:30:00.000Z',
+      dikunci: false,
+      dimodifikasi_manusia: true,
+      alasan_ai: 'Digeser manual',
+    }
+
+    const newTask = createSampleTask({ id: 't-new', durasi_menit: 60 })
+
+    const res = schedule({
+      tasks: [newTask],
+      fixedEvents: [],
+      existingBlocks: [humanEdited],
+      weekStart: BASE_WEEK_START,
+      now: BASE_NOW,
+    })
+
+    const foundEdited = res.blocks.find((b) => b.id === 'human-edited-1')
+    expect(foundEdited).toBeDefined()
+    expect(foundEdited?.mulai).toBe(humanEdited.mulai)
+    expect(foundEdited?.selesai).toBe(humanEdited.selesai)
+    expect(foundEdited?.dimodifikasi_manusia).toBe(true)
+
+    const placedNew = res.blocks.find((b) => b.task_id === 't-new')
+    expect(placedNew).toBeDefined()
+    const newStart = new Date(placedNew!.mulai).getTime()
+    const newEnd = new Date(placedNew!.selesai).getTime()
+    const editedStart = new Date(humanEdited.mulai).getTime()
+    const editedEnd = new Date(humanEdited.selesai).getTime()
+    const overlaps = Math.max(newStart, editedStart) < Math.min(newEnd, editedEnd)
+    expect(overlaps).toBe(false)
+  })
+
+  it('preserves both locked and human-edited blocks simultaneously during regeneration', () => {
+    const lockedBlock: ScheduleBlock = {
+      id: 'locked-1',
+      user_id: 'user-1',
+      task_id: 't-lock',
+      mulai: '2026-10-12T08:00:00.000Z',
+      selesai: '2026-10-12T09:00:00.000Z',
+      dikunci: true,
+      dimodifikasi_manusia: false,
+      alasan_ai: 'Dikunci',
+    }
+
+    const humanBlock: ScheduleBlock = {
+      id: 'human-1',
+      user_id: 'user-1',
+      task_id: 't-human',
+      mulai: '2026-10-12T10:00:00.000Z',
+      selesai: '2026-10-12T11:00:00.000Z',
+      dikunci: false,
+      dimodifikasi_manusia: true,
+      alasan_ai: 'Diubah manusia',
+    }
+
+    const res = schedule({
+      tasks: [createSampleTask({ id: 't-auto', durasi_menit: 60 })],
+      fixedEvents: [],
+      existingBlocks: [lockedBlock, humanBlock],
+      weekStart: BASE_WEEK_START,
+      now: BASE_NOW,
+    })
+
+    expect(res.blocks.find((b) => b.id === 'locked-1')).toBeDefined()
+    expect(res.blocks.find((b) => b.id === 'human-1')).toBeDefined()
+  })
+
   it('respects the 10-minute buffer between consecutive blocks', () => {
     const task1 = createSampleTask({ id: 't1', durasi_menit: 60 })
     const task2 = createSampleTask({ id: 't2', durasi_menit: 60 })

@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createBrowserClient } from '@/lib/supabase/client'
-import { ToastProvider } from '@/components/Toast'
+import { ToastProvider, useToast } from '@/components/Toast'
 import { PlannerProvider, usePlanner } from '@/components/PlannerContext'
 import { Calendar } from '@/components/Calendar'
 import { BlockDetail, type SelectedEventData } from '@/components/BlockDetail'
@@ -16,6 +16,7 @@ interface KalenderShellProps {
   userNama: string
   userEmail: string
   initialMinggu?: string
+  initialBlokId?: string
   initialTasks: Task[]
   initialFixedEvents: FixedEvent[]
   initialBlocks: ScheduleBlock[]
@@ -25,15 +26,32 @@ function KalenderClientInner({
   userNama,
   userEmail,
   initialMinggu,
+  initialBlokId,
   initialTasks,
   initialFixedEvents,
+  initialBlocks,
 }: KalenderShellProps) {
   const router = useRouter()
   const supabase = createBrowserClient()
-  const { scheduleBlocks, unplacedTasks } = usePlanner()
+  const { showToast } = useToast()
+  const { scheduleBlocks, setScheduleBlocks, unplacedTasks } = usePlanner()
 
   const [loggingOut, setLoggingOut] = useState(false)
-  const [selectedEvent, setSelectedEvent] = useState<SelectedEventData | null>(null)
+  const [selectedEvent, setSelectedEvent] = useState<SelectedEventData | null>(() => {
+    if (!initialBlokId) return null
+    const found = initialBlocks.find((b) => b.id === initialBlokId)
+    if (!found) return null
+    const task = initialTasks.find((t) => t.id === found.task_id)
+    const titleText = task?.judul || found.alasan_ai || 'Blok Jadwal'
+    return {
+      type: 'block',
+      id: found.id,
+      title: titleText,
+      start: found.mulai,
+      end: found.selesai,
+      block: found,
+    }
+  })
 
   async function handleSignOut() {
     setLoggingOut(true)
@@ -45,6 +63,53 @@ function KalenderClientInner({
       router.push('/login')
     } finally {
       setLoggingOut(false)
+    }
+  }
+
+  function handleBlockChange(updated: ScheduleBlock) {
+    setScheduleBlocks((prev) =>
+      prev.map((b) => (b.id === updated.id ? updated : b))
+    )
+  }
+
+  function handleUpdateBlock(updated: ScheduleBlock) {
+    setScheduleBlocks((prev) =>
+      prev.map((b) => (b.id === updated.id ? updated : b))
+    )
+    setSelectedEvent((prev) =>
+      prev
+        ? {
+            ...prev,
+            start: updated.mulai,
+            end: updated.selesai,
+            block: updated,
+          }
+        : null
+    )
+  }
+
+  function handleDeleteBlock(blockId: string) {
+    setScheduleBlocks((prev) => prev.filter((b) => b.id !== blockId))
+    setSelectedEvent(null)
+  }
+
+  async function handleToggleTaskStatus(task: Task) {
+    const nextStatus = task.status === 'done' ? 'todo' : 'done'
+    try {
+      const { error } = await supabase
+        .from('tasks')
+        .update({ status: nextStatus })
+        .eq('id', task.id)
+      if (error) throw error
+      showToast(
+        nextStatus === 'done'
+          ? 'Tugas ditandai selesai! 🎉'
+          : 'Tugas dikembalikan ke antrean todo',
+        'success'
+      )
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Gagal memperbarui status tugas'
+      showToast(msg, 'error')
     }
   }
 
@@ -110,7 +175,7 @@ function KalenderClientInner({
               Jadwal Kalender Mingguan
             </h1>
             <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
-              Lihat alokasi blok fokus otomatis yang diselaraskan dengan energi dan jadwal tetapmu.
+              Lihat alokasi blok fokus otomatis yang diselaraskan dengan energi dan jadwal tetapmu. Geser atau ubah ukuran blok untuk mengatur ulang.
             </p>
           </div>
 
@@ -133,12 +198,20 @@ function KalenderClientInner({
           tasks={initialTasks}
           initialDate={initialMinggu}
           onSelectEvent={setSelectedEvent}
+          editable={true}
+          onBlockChange={handleBlockChange}
         />
       </main>
 
       <BlockDetail
         event={selectedEvent}
         onClose={() => setSelectedEvent(null)}
+        tasks={initialTasks}
+        fixedEvents={initialFixedEvents}
+        allowEdit={true}
+        onUpdateBlock={handleUpdateBlock}
+        onDeleteBlock={handleDeleteBlock}
+        onToggleTaskStatus={handleToggleTaskStatus}
       />
     </div>
   )

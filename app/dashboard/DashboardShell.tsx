@@ -17,6 +17,7 @@ import { EnergyCheckin } from '@/components/EnergyCheckin'
 import { RealityCheck } from '@/components/RealityCheck'
 import { StatCards } from '@/components/StatCards'
 import { AiStatusBadge } from '@/components/AiStatusBadge'
+import { TodayAgenda } from '@/components/TodayAgenda'
 import type { Task, FixedEvent, ScheduleBlock } from '@/lib/types'
 
 interface DashboardShellProps {
@@ -370,12 +371,19 @@ function DashboardContentInner({ userNama, userEmail }: DashboardShellProps) {
                 mobileTab === 'calendar' ? 'block' : 'hidden lg:block'
               }`}
             >
+              <TodayAgenda
+                scheduleBlocks={scheduleBlocks}
+                tasks={tasks}
+                currentMinggu={currentMinggu}
+                onToggleTaskStatus={handleToggleTaskStatus}
+              />
               <Calendar
                 fixedEvents={fixedEvents}
                 scheduleBlocks={scheduleBlocks}
                 tasks={tasks}
                 onSelectEvent={setSelectedEvent}
                 onWeekChange={(iso) => setCurrentMinggu(iso)}
+                editable={false}
               />
             </div>
 
@@ -456,6 +464,10 @@ function DashboardContentInner({ userNama, userEmail }: DashboardShellProps) {
       <BlockDetail
         event={selectedEvent}
         onClose={() => setSelectedEvent(null)}
+        allowEdit={false}
+        tasks={tasks}
+        fixedEvents={fixedEvents}
+        onToggleTaskStatus={handleToggleTaskStatus}
       />
     </div>
   )

@@ -2,7 +2,7 @@ import { Suspense } from 'react'
 import KalenderContent from './KalenderContent'
 
 export default function KalenderPage(props: {
-  searchParams?: Promise<{ minggu?: string }>
+  searchParams?: Promise<{ minggu?: string; blok?: string }>
 }) {
   return (
     <Suspense
