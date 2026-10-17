@@ -7,7 +7,6 @@ import {
   type TimeInterval,
   buildTimeGrid,
   getFixedEventIntervals,
-  getPreservedBlockIntervals,
   hasBufferViolation,
   isIntervalOverlapping,
   parseTimeToMinutes,
@@ -21,6 +20,7 @@ export interface SchedulerInput {
   weekStart: Date | string
   activeHours?: Partial<ActiveHours>
   now?: Date | string
+  replanTodayOnly?: boolean
 }
 
 export interface UnplacedTask {
@@ -137,30 +137,63 @@ export function schedule(input: SchedulerInput): SchedulerOutput {
     malam: 3,
   }
 
-  const preservedBlocks = (input.existingBlocks ?? []).filter(
-    (b) => b.dikunci || b.dimodifikasi_manusia
-  )
+  const preservedBlocks = (input.existingBlocks ?? []).filter((b) => {
+    if (b.dikunci || b.dimodifikasi_manusia) {
+      return true
+    }
+    if (input.replanTodayOnly) {
+      const bStart = new Date(b.mulai)
+      if (bStart.toDateString() !== nowDate.toDateString()) {
+        return true
+      }
+      if (bStart.getTime() < nowDate.getTime()) {
+        return true
+      }
+    }
+    return false
+  })
 
   const grid = buildTimeGrid(weekStartDate, activeHours, energy)
   const fixedIntervals = getFixedEventIntervals(input.fixedEvents, weekStartDate)
-  const preservedIntervals = getPreservedBlockIntervals(input.existingBlocks ?? [])
+  const preservedIntervals: TimeInterval[] = preservedBlocks.map((b) => ({
+    start: new Date(b.mulai),
+    end: new Date(b.selesai),
+  }))
   const staticBlockedIntervals = [...fixedIntervals, ...preservedIntervals]
 
-  const unblockedSlots = grid.filter(
-    (slot) =>
-      !staticBlockedIntervals.some((bi) =>
-        isIntervalOverlapping(slot.start, slot.end, bi.start, bi.end)
-      )
-  )
+  const unblockedSlots = grid.filter((slot) => {
+    if (
+      input.replanTodayOnly &&
+      (slot.start.toDateString() !== nowDate.toDateString() ||
+        slot.start.getTime() < nowDate.getTime())
+    ) {
+      return false
+    }
+    return !staticBlockedIntervals.some((bi) =>
+      isIntervalOverlapping(slot.start, slot.end, bi.start, bi.end)
+    )
+  })
   const totalAvailableMinutes = unblockedSlots.length * 30
 
   const activeTasks = input.tasks.filter(
     (t) => t.status !== 'selesai' && t.status !== 'done'
   )
-  const totalRequiredMinutes = activeTasks.reduce(
-    (sum, t) => sum + (t.durasi_menit ?? 60),
-    0
-  )
+  const totalRequiredMinutes = activeTasks.reduce((sum, t) => {
+    if (input.replanTodayOnly) {
+      const presMin = preservedBlocks
+        .filter((b) => b.task_id === t.id)
+        .reduce(
+          (s, b) =>
+            s +
+            (new Date(b.selesai).getTime() - new Date(b.mulai).getTime()) /
+              60000,
+          0
+        )
+      const rem = Math.max(0, (t.durasi_menit ?? 60) - presMin)
+      return sum + rem
+    }
+    return sum + (t.durasi_menit ?? 60)
+  }, 0)
 
   const tasksWithPriority = activeTasks.map((t) => ({
     task: t,
@@ -208,7 +241,24 @@ export function schedule(input: SchedulerInput): SchedulerOutput {
 
   for (const item of tasksWithPriority) {
     const task = item.task
-    const sessions = splitTask(task)
+    const preservedMinutesForTask = preservedBlocks
+      .filter((b) => b.task_id === task.id)
+      .reduce(
+        (sum, b) =>
+          sum +
+          (new Date(b.selesai).getTime() - new Date(b.mulai).getTime()) / 60000,
+        0
+      )
+    const taskDurationNeeded = (task.durasi_menit ?? 60) - preservedMinutesForTask
+    if (taskDurationNeeded <= 0) {
+      continue
+    }
+
+    const taskToSchedule: Task = {
+      ...task,
+      durasi_menit: taskDurationNeeded,
+    }
+    const sessions = splitTask(taskToSchedule)
     let canFitAllSessions = true
     const tempAllocations: Array<{
       block: ScheduleBlock
@@ -230,6 +280,13 @@ export function schedule(input: SchedulerInput): SchedulerOutput {
         const dayIdx = slot.dayIndex
 
         if (start.getTime() < nowDate.getTime()) {
+          return false
+        }
+
+        if (
+          input.replanTodayOnly &&
+          start.toDateString() !== nowDate.toDateString()
+        ) {
           return false
         }
 
@@ -286,6 +343,13 @@ export function schedule(input: SchedulerInput): SchedulerOutput {
           const dayIdx = slot.dayIndex
 
           if (start.getTime() < nowDate.getTime()) {
+            return false
+          }
+
+          if (
+            input.replanTodayOnly &&
+            start.toDateString() !== nowDate.toDateString()
+          ) {
             return false
           }
 

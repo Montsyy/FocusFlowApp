@@ -7,7 +7,6 @@ import { createBrowserClient } from '@/lib/supabase/client'
 import { ToastProvider, useToast } from '@/components/Toast'
 import { PlannerProvider, usePlanner } from '@/components/PlannerContext'
 import { QuickActions } from '@/components/QuickActions'
-import { UnplacedTaskList } from '@/components/UnplacedTaskList'
 import { TaskPanel } from '@/components/TaskPanel'
 import { TaskInput } from '@/components/TaskInput'
 import { FixedEventForm } from '@/components/FixedEventForm'
@@ -400,10 +399,13 @@ function DashboardContentInner({ userNama, userEmail }: DashboardShellProps) {
                 onManageFixedEvents={() => setMainView('fixed_events')}
                 currentMinggu={currentMinggu}
               />
-              <UnplacedTaskList unplaced={unplacedTasks} />
+              <RealityCheck
+                totalEstimatedMinutes={totalEstimatedMinutes}
+                unplacedTasks={unplacedTasks}
+                onTaskUpdated={reloadTasks}
+              />
               <StatCards tasks={tasks} />
               <EnergyCheckin />
-              <RealityCheck totalEstimatedMinutes={totalEstimatedMinutes} />
 
               <div className="rounded-2xl border border-zinc-200 bg-white p-5 sm:p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
                 <div className="flex items-center justify-between pb-2 border-b border-zinc-100 dark:border-zinc-800">

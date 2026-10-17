@@ -373,4 +373,64 @@ describe('POST /api/schedule', () => {
     expect(preservedHuman).toBeDefined()
     expect(preservedHuman.dimodifikasi_manusia).toBe(true)
   })
+
+  it('re-plans only the remaining slots of today when mode is replan_today', async () => {
+    const replanNow = '2026-10-12T13:00:00.000Z'
+    const todayPastBlock: ScheduleBlock = {
+      id: 'today-past-unlocked',
+      user_id: mockUserId,
+      task_id: 'task-1',
+      mulai: '2026-10-12T08:00:00.000Z',
+      selesai: '2026-10-12T09:30:00.000Z',
+      dikunci: false,
+      dimodifikasi_manusia: false,
+      alasan_ai: 'Blok pagi tadi',
+    }
+    const todayFutureBlock: ScheduleBlock = {
+      id: 'today-future-unlocked',
+      user_id: mockUserId,
+      task_id: 'task-2',
+      mulai: '2026-10-12T15:00:00.000Z',
+      selesai: '2026-10-12T16:00:00.000Z',
+      dikunci: false,
+      dimodifikasi_manusia: false,
+      alasan_ai: 'Blok sore lama',
+    }
+    const otherDayBlock: ScheduleBlock = {
+      id: 'tomorrow-unlocked',
+      user_id: mockUserId,
+      task_id: 'task-2',
+      mulai: '2026-10-13T10:00:00.000Z',
+      selesai: '2026-10-13T11:00:00.000Z',
+      dikunci: false,
+      dimodifikasi_manusia: false,
+      alasan_ai: 'Blok besok',
+    }
+
+    inMemoryBlocks = [todayPastBlock, todayFutureBlock, otherDayBlock]
+
+    const req = new Request('http://localhost:3000/api/schedule', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        weekStart: '2026-10-11T00:00:00.000Z',
+        mode: 'replan_today',
+        now: replanNow,
+      }),
+    })
+
+    const res = await POST(req)
+    expect(res.status).toBe(200)
+    const json = await res.json()
+
+    expect(deletedBlockIds).not.toContain('today-past-unlocked')
+    expect(deletedBlockIds).not.toContain('tomorrow-unlocked')
+    expect(deletedBlockIds).toContain('today-future-unlocked')
+
+    const hasPast = json.blocks.some((b: ScheduleBlock) => b.id === 'today-past-unlocked')
+    const hasTomorrow = json.blocks.some((b: ScheduleBlock) => b.id === 'tomorrow-unlocked')
+    expect(hasPast).toBe(true)
+    expect(hasTomorrow).toBe(true)
+  })
 })
+

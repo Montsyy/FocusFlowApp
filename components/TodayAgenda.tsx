@@ -2,6 +2,7 @@
 
 import { useMemo } from 'react'
 import Link from 'next/link'
+import { usePlanner } from './PlannerContext'
 import type { ScheduleBlock, Task } from '@/lib/types'
 
 export interface TodayAgendaProps {
@@ -17,6 +18,7 @@ export function TodayAgenda({
   currentMinggu,
   onToggleTaskStatus,
 }: TodayAgendaProps) {
+  const { replanToday, isGenerating } = usePlanner()
   const todayStr = useMemo(() => new Date().toDateString(), [])
 
   const todayBlocks = useMemo(() => {
@@ -61,11 +63,24 @@ export function TodayAgenda({
           </div>
         </div>
 
-        {todayBlocks.length > 0 && (
-          <span className="rounded-full bg-indigo-50 px-2.5 py-0.5 text-[11px] font-semibold text-indigo-700 dark:bg-indigo-950/70 dark:text-indigo-300">
-            {completedCount}/{todayBlocks.length} Selesai
-          </span>
-        )}
+        <div className="flex items-center gap-2">
+          {todayBlocks.length > 0 && (
+            <span className="rounded-full bg-indigo-50 px-2.5 py-0.5 text-[11px] font-semibold text-indigo-700 dark:bg-indigo-950/70 dark:text-indigo-300">
+              {completedCount}/{todayBlocks.length} Selesai
+            </span>
+          )}
+
+          <button
+            type="button"
+            disabled={isGenerating}
+            onClick={() => void replanToday()}
+            className="inline-flex items-center gap-1 rounded-lg border border-red-200 bg-red-50 px-2 py-0.5 text-[11px] font-semibold text-red-700 hover:bg-red-100 disabled:opacity-50 dark:border-red-900/40 dark:bg-red-950/40 dark:text-red-300 transition-all"
+            title="Susun ulang sisa slot hari ini mulai dari jam sekarang"
+          >
+            <span>🚨</span>
+            <span className="hidden sm:inline">Hari Ini Kacau</span>
+          </button>
+        </div>
       </div>
 
       {todayBlocks.length === 0 ? (

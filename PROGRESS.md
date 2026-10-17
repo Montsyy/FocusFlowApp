@@ -10,11 +10,67 @@
 - [x] **Phase 7: Multi-Provider AI with Automatic Failover**
 - [x] **Phase 8: Schedule Generation and Energy Check-in**
 - [x] **Phase 9: Human Override**
-- [ ] **Phase 10: Energy Check-in & Reality Check**
+- [x] **Phase 10: Reality Check and Replan**
 - [ ] **Phase 11: Drag-and-Drop Override & Human Agency**
 - [ ] **Phase 12: Weekly Reflection & Analytics**
 - [ ] **Phase 13: Supabase Keepalive & Production Resilience**
 - [ ] **Phase 14: Polishing, Testing, & Deployment Preparation**
+
+---
+
+## Log Fase 10: Reality Check and Replan
+
+### Item Selesai
+1. Komponen `RealityCheck.tsx` dengan Kalkulasi Kapasitas Real-time:
+   - Menghitung kapasitas mingguan (`totalRequiredMinutes` vs `totalAvailableMinutes`) yang bersumber langsung dari deterministic scheduler dan `usePlanner`.
+   - Menampilkan banner peringatan overload (*overloaded warning banner*) ketika `totalRequiredMinutes > totalAvailableMinutes` lengkap dengan rasio jam (`Xj / Yj kapasitas (+Zj)`), progress bar 100% gradient peringatan, dan pesan panduan tindakan.
+   - Menampilkan status kapasitas aman ketika beban waktu berada dalam batas wajar.
+2. Penanganan Tugas "Perlu Keputusan Manusia" (`UnplacedDecisionList.tsx`):
+   - Mendaftar setiap tugas yang tidak dapat dijadwalkan (*unplaced task*) beserta alasan spesifiknya (`tidak muat` -> Slot Waktu Penuh, `melewati deadline` -> Melewati Deadline, `melebihi batas harian` -> Batas Harian 6j).
+   - Tiga tindakan langsung untuk setiap tugas:
+     - **"Tunda"**: menu dropdown interaktif untuk memundurkan deadline +3 hari, +7 hari (minggu depan), atau menandai status tugas menjadi `tunda`. Langsung memperbarui Supabase dan memicu penjadwalan ulang otomatis.
+     - **"Pecah tugas"**: mengaktifkan `can_split: true`, menaikkan `sesi_disarankan`, memperbarui Supabase, dan menjadwalkan ulang secara otomatis agar tugas muat dalam slot-slot yang lebih kecil.
+     - **"Minta bantuan"**: membuka modal template pesan siap pakai berbahasa Indonesia yang sopan untuk dosen/rekan tim dengan tombol "Salin Pesan" langsung ke clipboard via `navigator.clipboard.writeText`.
+3. Fitur "Hari Ini Kacau" (*Same-Day Replan*):
+   - Tombol "🚨 Hari Ini Kacau" di `RealityCheck.tsx`, `TodayAgenda.tsx`, dan `CalendarToolbar.tsx`.
+   - Menjalankan penjadwalan ulang *hanya* untuk slot tersisa hari ini mulai dari jam sekarang (`nowDate`), menggunakan level energi terkini.
+   - Menjaga 100% utuh: blok jadwal di hari-hari lain, blok hari ini sebelum jam sekarang, blok yang terkunci (`dikunci: true`), dan blok yang dimodifikasi manual (`dimodifikasi_manusia: true`).
+   - `lib/scheduler/index.ts` diperkaya dengan opsi `replanTodayOnly`: mengalokasikan slot kandidat hanya untuk hari ini `>= now` dan menghitung sisa durasi tugas yang belum terpenuhi di blok terawetkan.
+   - `app/api/schedule/route.ts` hanya menghapus blok unpreserved hari ini yang dimulai `>= now`, tanpa menghapus blok di hari lain maupun blok pagi/masa lalu hari ini.
+4. Pemisahan Lingkup Dashboard vs Kalender Penuh (ADDITION):
+   - Di `/dashboard`: menampilkan banner penuh `RealityCheck` (`variant="full"`) lengkap dengan angka kapasitas, progress bar visual, tombol "Hari Ini Kacau", dan daftar tugas inline di bawah "Perlu Keputusan Manusia".
+   - Di `/dashboard/kalender`: menampilkan kapasitas bar ringkas (`variant="compact"`) yang hemat ruang, tombol "🚨 Hari Ini Kacau", dan tombol lencana "⚠️ X Perlu Keputusan" yang membuka slide-over drawer `UnplacedDrawer.tsx` dengan daftar dan 3 aksi yang sama persis.
+5. Pengujian Komprehensif:
+   - `lib/scheduler/index.test.ts`: Pengujian unit untuk kalkulasi kapasitas akurat dan deteksi jadwal overload saat `totalRequiredMinutes > totalAvailableMinutes`.
+   - `lib/scheduler/index.test.ts`: Pengujian unit batas same-day replan (`Hari ini kacau`) yang membuktikan blok masa lalu hari ini, blok hari lain, dan blok terkunci/diedit tetap terjaga murni, serta blok baru hanya ditempatkan di hari ini `>= now`.
+   - `app/api/schedule/route.test.ts`: Pengujian integrasi API dengan opsi `mode: 'replan_today'`, memastikan rute hanya menghapus blok unpreserved masa depan hari ini.
+   - `components/RealityCheck.test.tsx`: Pengujian SSR untuk varian full, varian compact, banner overload, dan rendering daftar 3 aksi unplaced.
+   - `components/UnplacedDrawer.test.tsx`: Pengujian SSR untuk komponen slide-over drawer saat terbuka dan tertutup.
+   - 108 pengujian Vitest lulus 100%, TypeScript typecheck 0 error, ESLint 0 warning/error, Next.js build sukses.
+
+### File yang Dibuat atau Diubah
+- `lib/scheduler/index.ts`
+- `lib/scheduler/index.test.ts`
+- `app/api/schedule/route.ts`
+- `app/api/schedule/route.test.ts`
+- `components/PlannerContext.tsx`
+- `components/UnplacedDecisionList.tsx`
+- `components/UnplacedDrawer.tsx`
+- `components/UnplacedDrawer.test.tsx`
+- `components/RealityCheck.tsx`
+- `components/RealityCheck.test.tsx`
+- `components/TodayAgenda.tsx`
+- `components/CalendarToolbar.tsx`
+- `app/dashboard/DashboardShell.tsx`
+- `app/dashboard/kalender/KalenderShell.tsx`
+- `PROGRESS.md`
+
+### Keputusan Desain / Teknis
+- Mengabstraksi logika interaksi tiga aksi keputusan unplaced ke dalam komponen `UnplacedDecisionList` mandiri, sehingga dapat digunakan secara seragam baik pada halaman `/dashboard` maupun slide-over `UnplacedDrawer` di `/dashboard/kalender`.
+- Mengimplementasikan `replanTodayOnly` secara deterministik pada scheduler: blok non-target (hari lain & masa lalu hari ini) otomatis diperlakukan sebagai interval terblokir (*preserved blocked intervals*), dan slot kandidat dibatasi secara ketat hanya pada rentang waktu `slot.start.toDateString() === nowDate.toDateString() && slot.start.getTime() >= nowDate.getTime()`.
+
+### Fase Berikutnya
+- **Phase 11: Drag-and-Drop Override & Human Agency**
 
 ---
 

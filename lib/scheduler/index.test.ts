@@ -422,4 +422,141 @@ describe('deterministic scheduler', () => {
       })
     }
   })
+
+  describe('capacity calculation and overload detection', () => {
+    it('calculates totalRequiredMinutes and totalAvailableMinutes accurately', () => {
+      const task1 = createSampleTask({ id: 't1', durasi_menit: 120 })
+      const task2 = createSampleTask({ id: 't2', durasi_menit: 90 })
+
+      const res = schedule({
+        tasks: [task1, task2],
+        fixedEvents: [],
+        weekStart: BASE_WEEK_START,
+        now: BASE_NOW,
+      })
+
+      expect(res.totalRequiredMinutes).toBe(210)
+      expect(res.totalAvailableMinutes).toBeGreaterThan(0)
+      expect(res.totalRequiredMinutes).toBeLessThanOrEqual(res.totalAvailableMinutes)
+    })
+
+    it('detects overloaded schedule when totalRequiredMinutes exceeds totalAvailableMinutes', () => {
+      const fixedEventsAllWeek = [0, 1, 2, 3, 4, 5, 6].map((day) =>
+        createSampleFixedEvent({
+          id: `full-block-${day}`,
+          hari: day,
+          jam_mulai: '07:00:00',
+          jam_selesai: '21:00:00',
+        })
+      )
+
+      const tasks = [
+        createSampleTask({ id: 'heavy-1', durasi_menit: 180, can_split: true }),
+        createSampleTask({ id: 'heavy-2', durasi_menit: 180, can_split: true }),
+        createSampleTask({ id: 'heavy-3', durasi_menit: 180, can_split: true }),
+      ]
+
+      const res = schedule({
+        tasks,
+        fixedEvents: fixedEventsAllWeek,
+        weekStart: BASE_WEEK_START,
+        now: BASE_NOW,
+      })
+
+      expect(res.totalRequiredMinutes).toBe(540)
+      expect(res.totalRequiredMinutes).toBeGreaterThan(res.totalAvailableMinutes)
+      expect(res.totalRequiredMinutes > res.totalAvailableMinutes).toBe(true)
+    })
+  })
+
+  describe('same-day replan boundaries (Hari ini kacau)', () => {
+    it('strictly preserves past blocks of today, other days, and locked blocks', () => {
+      const todayPastBlock: ScheduleBlock = {
+        id: 'today-past',
+        user_id: 'user-1',
+        task_id: 't-past',
+        mulai: '2026-10-12T08:00:00.000Z',
+        selesai: '2026-10-12T09:30:00.000Z',
+        dikunci: false,
+        dimodifikasi_manusia: false,
+        alasan_ai: 'Blok pagi yang sudah lewat',
+      }
+
+      const otherDayBlock: ScheduleBlock = {
+        id: 'tuesday-block',
+        user_id: 'user-1',
+        task_id: 't-tues',
+        mulai: '2026-10-13T10:00:00.000Z',
+        selesai: '2026-10-13T11:00:00.000Z',
+        dikunci: false,
+        dimodifikasi_manusia: false,
+        alasan_ai: 'Blok hari lain',
+      }
+
+      const lockedBlockLaterToday: ScheduleBlock = {
+        id: 'locked-later',
+        user_id: 'user-1',
+        task_id: 't-locked-later',
+        mulai: '2026-10-12T16:00:00.000Z',
+        selesai: '2026-10-12T17:00:00.000Z',
+        dikunci: true,
+        dimodifikasi_manusia: false,
+        alasan_ai: 'Terkunci sore ini',
+      }
+
+      const humanEditedLaterToday: ScheduleBlock = {
+        id: 'human-edited-later',
+        user_id: 'user-1',
+        task_id: 't-human-later',
+        mulai: '2026-10-12T18:00:00.000Z',
+        selesai: '2026-10-12T19:00:00.000Z',
+        dikunci: false,
+        dimodifikasi_manusia: true,
+        alasan_ai: 'Diedit manusia sore ini',
+      }
+
+      const urgentTask = createSampleTask({
+        id: 't-urgent',
+        durasi_menit: 60,
+        deadline: '2026-10-12T21:00:00.000Z',
+      })
+
+      const replanNow = '2026-10-12T13:00:00.000Z'
+
+      const res = schedule({
+        tasks: [urgentTask],
+        fixedEvents: [],
+        existingBlocks: [
+          todayPastBlock,
+          otherDayBlock,
+          lockedBlockLaterToday,
+          humanEditedLaterToday,
+        ],
+        weekStart: BASE_WEEK_START,
+        now: replanNow,
+        replanTodayOnly: true,
+      })
+
+      expect(res.blocks.find((b) => b.id === 'today-past')).toBeDefined()
+      expect(res.blocks.find((b) => b.id === 'tuesday-block')).toBeDefined()
+      expect(res.blocks.find((b) => b.id === 'locked-later')).toBeDefined()
+      expect(res.blocks.find((b) => b.id === 'human-edited-later')).toBeDefined()
+
+      const newlyPlaced = res.blocks.filter(
+        (b) =>
+          b.id !== 'today-past' &&
+          b.id !== 'tuesday-block' &&
+          b.id !== 'locked-later' &&
+          b.id !== 'human-edited-later'
+      )
+
+      expect(newlyPlaced.length).toBeGreaterThan(0)
+      for (const block of newlyPlaced) {
+        const bStart = new Date(block.mulai)
+        expect(bStart.toISOString().split('T')[0]).toBe('2026-10-12')
+        expect(bStart.getTime()).toBeGreaterThanOrEqual(new Date(replanNow).getTime())
+      }
+    })
+  })
 })
+

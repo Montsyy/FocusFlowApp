@@ -36,6 +36,9 @@ export interface GenerateScheduleOptions {
   showCalendarLink?: boolean
   currentMinggu?: string
   customSuccessMessage?: string
+  replanToday?: boolean
+  mode?: 'replan_today' | 'regular'
+  now?: string
 }
 
 interface PlannerContextValue {
@@ -48,6 +51,7 @@ interface PlannerContextValue {
   generateSchedule: (
     options?: GenerateScheduleOptions
   ) => Promise<GenerateScheduleResult | null>
+  replanToday: (now?: string) => Promise<GenerateScheduleResult | null>
 }
 
 const PlannerContext = createContext<PlannerContextValue | null>(null)
@@ -74,7 +78,12 @@ export function PlannerProvider({
         const res = await fetch('/api/schedule', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ weekStart: options.weekStart }),
+          body: JSON.stringify({
+            weekStart: options.weekStart,
+            mode: options.mode,
+            replanToday: options.replanToday,
+            now: options.now,
+          }),
         })
 
         if (!res.ok) {
@@ -143,6 +152,19 @@ export function PlannerProvider({
     [showToast]
   )
 
+  const replanToday = useCallback(
+    async (now?: string) => {
+      return generateSchedule({
+        replanToday: true,
+        mode: 'replan_today',
+        now: now || new Date().toISOString(),
+        customSuccessMessage:
+          'Hari ini berhasil disusun ulang dari slot tersisa! 🚨',
+      })
+    },
+    [generateSchedule]
+  )
+
   return (
     <PlannerContext.Provider
       value={{
@@ -153,6 +175,7 @@ export function PlannerProvider({
         setScheduleBlocks,
         setUnplacedTasks,
         generateSchedule,
+        replanToday,
       }}
     >
       {children}
@@ -171,7 +194,9 @@ export function usePlanner() {
       setScheduleBlocks: () => {},
       setUnplacedTasks: () => {},
       generateSchedule: async () => null,
+      replanToday: async () => null,
     }
   }
   return context
 }
+

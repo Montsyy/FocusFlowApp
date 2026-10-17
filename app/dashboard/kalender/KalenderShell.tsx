@@ -8,7 +8,8 @@ import { ToastProvider, useToast } from '@/components/Toast'
 import { PlannerProvider, usePlanner } from '@/components/PlannerContext'
 import { Calendar } from '@/components/Calendar'
 import { BlockDetail, type SelectedEventData } from '@/components/BlockDetail'
-import { UnplacedTaskList } from '@/components/UnplacedTaskList'
+import { RealityCheck } from '@/components/RealityCheck'
+import { UnplacedDrawer } from '@/components/UnplacedDrawer'
 import { AiStatusBadge } from '@/components/AiStatusBadge'
 import type { Task, FixedEvent, ScheduleBlock } from '@/lib/types'
 
@@ -34,8 +35,9 @@ function KalenderClientInner({
   const router = useRouter()
   const supabase = createBrowserClient()
   const { showToast } = useToast()
-  const { scheduleBlocks, setScheduleBlocks, unplacedTasks } = usePlanner()
+  const { scheduleBlocks, setScheduleBlocks, unplacedTasks, generateSchedule } = usePlanner()
 
+  const [isUnplacedDrawerOpen, setIsUnplacedDrawerOpen] = useState(false)
   const [loggingOut, setLoggingOut] = useState(false)
   const [selectedEvent, setSelectedEvent] = useState<SelectedEventData | null>(() => {
     if (!initialBlokId) return null
@@ -188,9 +190,10 @@ function KalenderClientInner({
           </Link>
         </div>
 
-        {unplacedTasks.length > 0 && (
-          <UnplacedTaskList unplaced={unplacedTasks} />
-        )}
+        <RealityCheck
+          variant="compact"
+          onOpenUnplacedDrawer={() => setIsUnplacedDrawerOpen(true)}
+        />
 
         <Calendar
           fixedEvents={initialFixedEvents}
@@ -212,6 +215,13 @@ function KalenderClientInner({
         onUpdateBlock={handleUpdateBlock}
         onDeleteBlock={handleDeleteBlock}
         onToggleTaskStatus={handleToggleTaskStatus}
+      />
+
+      <UnplacedDrawer
+        isOpen={isUnplacedDrawerOpen}
+        onClose={() => setIsUnplacedDrawerOpen(false)}
+        unplacedTasks={unplacedTasks}
+        onTaskUpdated={() => void generateSchedule()}
       />
     </div>
   )

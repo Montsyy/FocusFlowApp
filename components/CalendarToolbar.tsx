@@ -17,7 +17,7 @@ export function CalendarToolbar({
   onToday,
   currentWeekStart,
 }: CalendarToolbarProps) {
-  const { isGenerating, generateSchedule } = usePlanner()
+  const { isGenerating, generateSchedule, replanToday } = usePlanner()
 
   return (
     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-zinc-200 dark:border-zinc-800">
@@ -53,7 +53,7 @@ export function CalendarToolbar({
         </span>
       </div>
 
-      <div className="flex flex-wrap items-center gap-3">
+      <div className="flex flex-wrap items-center gap-2 sm:gap-3">
         <div className="hidden xl:flex items-center gap-2.5 text-[11px] font-medium text-zinc-600 dark:text-zinc-400">
           <span className="inline-flex items-center gap-1.5">
             <span className="h-2.5 w-2.5 rounded-full bg-slate-500" />
@@ -71,6 +71,26 @@ export function CalendarToolbar({
             🔒 Terkunci
           </span>
         </div>
+
+        <button
+          type="button"
+          disabled={isGenerating}
+          onClick={() => void replanToday()}
+          className="inline-flex items-center gap-1.5 rounded-xl border border-red-200 bg-red-50/80 px-3 py-1.5 text-xs font-semibold text-red-700 shadow-sm hover:bg-red-100 disabled:opacity-50 dark:border-red-900/40 dark:bg-red-950/40 dark:text-red-300 transition-all"
+          title="Susun ulang sisa slot hari ini mulai dari jam sekarang"
+        >
+          {isGenerating ? (
+            <>
+              <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-red-500 border-t-transparent" />
+              <span>Menyusun...</span>
+            </>
+          ) : (
+            <>
+              <span>🚨</span>
+              <span>Hari Ini Kacau</span>
+            </>
+          )}
+        </button>
 
         <button
           type="button"

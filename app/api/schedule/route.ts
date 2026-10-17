@@ -29,9 +29,15 @@ export async function POST(req: Request) {
   try {
     const body = (await req.json().catch(() => ({}))) as {
       weekStart?: string
+      mode?: 'replan_today' | 'regular'
+      replanToday?: boolean
+      now?: string
     }
 
-    const today = new Date()
+    const isReplanToday = Boolean(body.replanToday || body.mode === 'replan_today')
+    const nowDate = body.now ? new Date(body.now) : new Date()
+
+    const today = new Date(nowDate)
     const currentDay = today.getDay()
     const sunday = new Date(today)
     sunday.setDate(today.getDate() - currentDay)
@@ -40,7 +46,7 @@ export async function POST(req: Request) {
     const weekStart = body.weekStart ? new Date(body.weekStart) : sunday
     const weekEnd = new Date(weekStart.getTime() + 7 * 24 * 60 * 60 * 1000)
 
-    const todayStr = new Date().toISOString().split('T')[0]
+    const todayStr = nowDate.toISOString().split('T')[0]
 
     const [
       { data: tasksData },
@@ -85,17 +91,33 @@ export async function POST(req: Request) {
       energy: energyLevels,
       weekStart,
       activeHours,
-      now: new Date(),
+      now: nowDate,
+      replanTodayOnly: isReplanToday,
     })
 
-    const preservedBlocks = existingBlocks.filter(
-      (b) => b.dikunci || b.dimodifikasi_manusia
-    )
+    const preservedBlocks = existingBlocks.filter((b) => {
+      if (b.dikunci || b.dimodifikasi_manusia) return true
+      if (isReplanToday) {
+        const bStart = new Date(b.mulai)
+        if (bStart.toDateString() !== nowDate.toDateString()) {
+          return true
+        }
+        if (bStart.getTime() < nowDate.getTime()) {
+          return true
+        }
+      }
+      return false
+    })
     const preservedIds = new Set(preservedBlocks.map((b) => b.id))
 
     const blocksToDelete = existingBlocks.filter((b) => {
       if (preservedIds.has(b.id)) return false
       const t = new Date(b.mulai).getTime()
+      if (isReplanToday) {
+        const bStart = new Date(b.mulai)
+        if (bStart.toDateString() !== nowDate.toDateString()) return false
+        return bStart.getTime() >= nowDate.getTime()
+      }
       return t >= weekStart.getTime() && t < weekEnd.getTime()
     })
 
