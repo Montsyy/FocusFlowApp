@@ -57,23 +57,6 @@ export function CalendarToolbar({
       </div>
 
       <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-        <div className="hidden xl:flex items-center gap-2.5 text-[11px] font-medium text-zinc-600 dark:text-zinc-400">
-          <span className="inline-flex items-center gap-1.5">
-            <span className="h-2.5 w-2.5 rounded-full bg-slate-500" />
-            Jadwal Tetap
-          </span>
-          <span className="inline-flex items-center gap-1.5">
-            <span className="h-2.5 w-2.5 rounded-full bg-blue-500" />
-            Rencana AI
-          </span>
-          <span className="inline-flex items-center gap-1.5">
-            <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
-            Diubah Pengguna
-          </span>
-          <span className="inline-flex items-center gap-1">
-            🔒 Terkunci
-          </span>
-        </div>
 
         <button
           type="button"

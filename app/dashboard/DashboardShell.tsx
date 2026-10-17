@@ -28,16 +28,44 @@ interface DashboardShellProps {
   initialMinggu?: string
 }
 
-function getInitialWeekStart(): string {
-  const today = new Date()
-  const day = today.getDay()
-  const sunday = new Date(today)
-  sunday.setDate(today.getDate() - day)
-  return sunday.toISOString().split('T')[0]
+function normalizeToSunday(dateStr?: string): string {
+  if (!dateStr) {
+    const today = new Date()
+    const sunday = new Date(today)
+    sunday.setDate(today.getDate() - today.getDay())
+    const y = sunday.getFullYear()
+    const m = String(sunday.getMonth() + 1).padStart(2, '0')
+    const d = String(sunday.getDate()).padStart(2, '0')
+    return `${y}-${m}-${d}`
+  }
+
+  const parts = dateStr.split('-').map(Number)
+  if (parts.length === 3 && parts[0] && parts[1] && parts[2]) {
+    const d = new Date(parts[0], parts[1] - 1, parts[2])
+    const day = d.getDay()
+    const sunday = new Date(d)
+    sunday.setDate(d.getDate() - day)
+    const y = sunday.getFullYear()
+    const m = String(sunday.getMonth() + 1).padStart(2, '0')
+    const dt = String(sunday.getDate()).padStart(2, '0')
+    return `${y}-${m}-${dt}`
+  }
+
+  const d = new Date(dateStr)
+  const sunday = new Date(d)
+  sunday.setDate(d.getDate() - d.getDay())
+  const y = sunday.getFullYear()
+  const m = String(sunday.getMonth() + 1).padStart(2, '0')
+  const dt = String(sunday.getDate()).padStart(2, '0')
+  return `${y}-${m}-${dt}`
 }
 
 function formatWeekRange(weekStartStr: string): string {
-  const start = new Date(weekStartStr)
+  const parts = weekStartStr.split('-').map(Number)
+  const start =
+    parts.length === 3 && parts[0] && parts[1] && parts[2]
+      ? new Date(parts[0], parts[1] - 1, parts[2])
+      : new Date(weekStartStr)
   const end = new Date(start.getTime() + 6 * 24 * 60 * 60 * 1000)
   const monthNames = [
     'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun',
@@ -60,7 +88,7 @@ function DashboardContentInner({ userId, userNama, userEmail, initialMinggu }: D
     generateSchedule,
   } = usePlanner()
 
-  const currentMinggu = initialMinggu || getInitialWeekStart()
+  const currentMinggu = normalizeToSunday(initialMinggu)
 
   const [mainView, setMainView] = useState<'dashboard' | 'fixed_events'>('dashboard')
   const [mobileTab, setMobileTab] = useState<'tasks' | 'agenda' | 'metrics'>('agenda')
@@ -163,18 +191,24 @@ function DashboardContentInner({ userId, userNama, userEmail, initialMinggu }: D
       const params = new URLSearchParams(window.location.search)
       const bId = params.get('blok')
       if (bId) {
-        const found = scheduleBlocks.find((b) => b.id === bId)
-        if (found) {
-          const task = tasks.find((t) => t.id === found.task_id)
-          setSelectedEvent({
-            type: 'block',
-            id: found.id,
-            title: task?.judul || found.alasan_ai || 'Blok Jadwal',
-            start: found.mulai,
-            end: found.selesai,
-            block: found,
-          })
-        }
+        setScheduleBlocks((currentBlocks) => {
+          const found = currentBlocks.find((b) => b.id === bId)
+          if (found) {
+            setTasks((currentTasks) => {
+              const task = currentTasks.find((t) => t.id === found.task_id)
+              setSelectedEvent({
+                type: 'block',
+                id: found.id,
+                title: task?.judul || found.alasan_ai || 'Blok Jadwal',
+                start: found.mulai,
+                end: found.selesai,
+                block: found,
+              })
+              return currentTasks
+            })
+          }
+          return currentBlocks
+        })
       } else {
         setSelectedEvent(null)
       }
@@ -190,7 +224,7 @@ function DashboardContentInner({ userId, userNama, userEmail, initialMinggu }: D
       window.removeEventListener('focus', handleFocus)
       window.removeEventListener('popstate', handlePopState)
     }
-  }, [supabase, currentMinggu, setScheduleBlocks, setUnplacedTasks, setCapacity, showToast, scheduleBlocks, tasks])
+  }, [supabase, currentMinggu, setScheduleBlocks, setUnplacedTasks, setCapacity, showToast])
 
   async function reloadTasks() {
     try {

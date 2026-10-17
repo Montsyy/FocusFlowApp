@@ -26,6 +26,38 @@ interface KalenderShellProps {
   initialBlocks: ScheduleBlock[]
 }
 
+function normalizeToSunday(dateStr?: string): string {
+  if (!dateStr) {
+    const today = new Date()
+    const sunday = new Date(today)
+    sunday.setDate(today.getDate() - today.getDay())
+    const y = sunday.getFullYear()
+    const m = String(sunday.getMonth() + 1).padStart(2, '0')
+    const d = String(sunday.getDate()).padStart(2, '0')
+    return `${y}-${m}-${d}`
+  }
+
+  const parts = dateStr.split('-').map(Number)
+  if (parts.length === 3 && parts[0] && parts[1] && parts[2]) {
+    const d = new Date(parts[0], parts[1] - 1, parts[2])
+    const day = d.getDay()
+    const sunday = new Date(d)
+    sunday.setDate(d.getDate() - day)
+    const y = sunday.getFullYear()
+    const m = String(sunday.getMonth() + 1).padStart(2, '0')
+    const dt = String(sunday.getDate()).padStart(2, '0')
+    return `${y}-${m}-${dt}`
+  }
+
+  const d = new Date(dateStr)
+  const sunday = new Date(d)
+  sunday.setDate(d.getDate() - d.getDay())
+  const y = sunday.getFullYear()
+  const m = String(sunday.getMonth() + 1).padStart(2, '0')
+  const dt = String(sunday.getDate()).padStart(2, '0')
+  return `${y}-${m}-${dt}`
+}
+
 function KalenderClientInner({
   userNama,
   userEmail,
@@ -40,8 +72,8 @@ function KalenderClientInner({
   const { showToast } = useToast()
   const { scheduleBlocks, setScheduleBlocks, unplacedTasks, setUnplacedTasks, setCapacity, generateSchedule } = usePlanner()
 
-  const [currentMinggu, setCurrentMinggu] = useState<string>(
-    initialMinggu || new Date().toISOString().split('T')[0]
+  const [currentMinggu, setCurrentMinggu] = useState<string>(() =>
+    normalizeToSunday(initialMinggu)
   )
   const [tasks, setTasks] = useState<Task[]>(initialTasks)
   const [fixedEvents, setFixedEvents] = useState<FixedEvent[]>(initialFixedEvents)
@@ -72,9 +104,9 @@ function KalenderClientInner({
         supabase.from('schedule_blocks').select('*'),
       ])
 
-      const freshTasks = (tData as Task[]) ?? tasks
-      const freshFixed = (fData as FixedEvent[]) ?? fixedEvents
-      const freshBlocks = (bData as ScheduleBlock[]) ?? scheduleBlocks
+      const freshTasks = (tData as Task[]) ?? []
+      const freshFixed = (fData as FixedEvent[]) ?? []
+      const freshBlocks = (bData as ScheduleBlock[]) ?? []
 
       setTasks(freshTasks)
       setFixedEvents(freshFixed)
@@ -100,7 +132,7 @@ function KalenderClientInner({
         ),
       })
     } catch {}
-  }, [supabase, tasks, fixedEvents, scheduleBlocks, currentMinggu, setScheduleBlocks, setUnplacedTasks, setCapacity])
+  }, [supabase, currentMinggu, setScheduleBlocks, setUnplacedTasks, setCapacity])
 
   useEffect(() => {
     const handleVisibilityChange = () => {
@@ -117,18 +149,24 @@ function KalenderClientInner({
       const params = new URLSearchParams(window.location.search)
       const bId = params.get('blok')
       if (bId) {
-        const found = scheduleBlocks.find((b) => b.id === bId)
-        if (found) {
-          const task = tasks.find((t) => t.id === found.task_id)
-          setSelectedEvent({
-            type: 'block',
-            id: found.id,
-            title: task?.judul || found.alasan_ai || 'Blok Jadwal',
-            start: found.mulai,
-            end: found.selesai,
-            block: found,
-          })
-        }
+        setScheduleBlocks((currentBlocks) => {
+          const found = currentBlocks.find((b) => b.id === bId)
+          if (found) {
+            setTasks((currentTasks) => {
+              const task = currentTasks.find((t) => t.id === found.task_id)
+              setSelectedEvent({
+                type: 'block',
+                id: found.id,
+                title: task?.judul || found.alasan_ai || 'Blok Jadwal',
+                start: found.mulai,
+                end: found.selesai,
+                block: found,
+              })
+              return currentTasks
+            })
+          }
+          return currentBlocks
+        })
       } else {
         setSelectedEvent(null)
       }
@@ -143,7 +181,7 @@ function KalenderClientInner({
       window.removeEventListener('focus', handleFocus)
       window.removeEventListener('popstate', handlePopState)
     }
-  }, [syncData, scheduleBlocks, tasks])
+  }, [syncData, setScheduleBlocks])
 
   async function handleSignOut() {
     setLoggingOut(true)
@@ -209,11 +247,15 @@ function KalenderClientInner({
   }
 
   function handleWeekChange(weekIso: string) {
-    setCurrentMinggu(weekIso)
+    const normalized = normalizeToSunday(weekIso)
+    if (normalized === currentMinggu) return
+    setCurrentMinggu(normalized)
     if (typeof window !== 'undefined') {
       const url = new URL(window.location.href)
-      url.searchParams.set('minggu', weekIso)
-      window.history.replaceState({}, '', url.toString())
+      if (url.searchParams.get('minggu') !== normalized) {
+        url.searchParams.set('minggu', normalized)
+        window.history.replaceState({}, '', url.toString())
+      }
     }
   }
 
@@ -349,7 +391,7 @@ export default function KalenderShell(props: KalenderShellProps) {
       tasks: props.initialTasks,
       fixedEvents: props.initialFixedEvents,
       existingBlocks: props.initialBlocks,
-      weekStart: props.initialMinggu || new Date().toISOString().split('T')[0],
+      weekStart: normalizeToSunday(props.initialMinggu),
     })
   }, [props.initialTasks, props.initialFixedEvents, props.initialBlocks, props.initialMinggu])
 

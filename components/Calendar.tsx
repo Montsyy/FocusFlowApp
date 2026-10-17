@@ -26,6 +26,13 @@ interface CalendarProps {
   onBlockChange?: (updated: ScheduleBlock, prev: ScheduleBlock) => void
 }
 
+function formatLocalDate(d: Date): string {
+  const year = d.getFullYear()
+  const month = String(d.getMonth() + 1).padStart(2, '0')
+  const date = String(d.getDate()).padStart(2, '0')
+  return `${year}-${month}-${date}`
+}
+
 export function Calendar({
   fixedEvents,
   scheduleBlocks,
@@ -40,7 +47,7 @@ export function Calendar({
   const { showToast } = useToast()
   const [weekTitle, setWeekTitle] = useState('')
   const [currentWeekStart, setCurrentWeekStart] = useState<string>(
-    initialDate || new Date().toISOString().split('T')[0]
+    initialDate || formatLocalDate(new Date())
   )
 
   useEffect(() => {
@@ -312,7 +319,7 @@ export function Calendar({
           snapDuration="00:15:00"
           datesSet={(arg) => {
             setWeekTitle(arg.view.title)
-            const iso = arg.start.toISOString().split('T')[0]
+            const iso = formatLocalDate(arg.start)
             setCurrentWeekStart(iso)
             onWeekChange?.(iso, arg.view.title)
           }}
