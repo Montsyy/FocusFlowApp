@@ -361,7 +361,7 @@ export function BlockDetail({
                   ? 'bg-zinc-400'
                   : block?.dimodifikasi_manusia
                   ? 'bg-emerald-500'
-                  : 'bg-indigo-500'
+                  : 'bg-blue-500'
               }`}
             />
             <h3 className="text-base font-bold text-zinc-900 dark:text-zinc-50">
@@ -417,7 +417,7 @@ export function BlockDetail({
                 <button
                   type="button"
                   onClick={handleStartEditTime}
-                  className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline"
+                  className="text-xs font-semibold text-blue-600 dark:text-blue-400 hover:underline"
                 >
                   ✏️ Ubah Waktu
                 </button>
@@ -429,7 +429,7 @@ export function BlockDetail({
                 {formatTimeRange(event.start, event.end)}
               </p>
             ) : (
-              <div className="mt-2 rounded-xl border border-indigo-100 bg-indigo-50/50 p-3 dark:border-indigo-900/40 dark:bg-indigo-950/30">
+              <div className="mt-2 rounded-xl border border-blue-100 bg-blue-50/50 p-3 dark:border-blue-900/40 dark:bg-blue-950/30">
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                   <div>
                     <label className="block text-[10px] font-semibold text-zinc-500 mb-1">
@@ -478,7 +478,7 @@ export function BlockDetail({
                     type="button"
                     disabled={isSaving}
                     onClick={() => void handleSaveEditedTime()}
-                    className="rounded-lg bg-indigo-600 px-3 py-1 text-xs font-semibold text-white shadow-sm hover:bg-indigo-500 disabled:opacity-50"
+                    className="rounded-lg bg-blue-600 px-3 py-1 text-xs font-semibold text-white shadow-sm hover:bg-blue-500 disabled:opacity-50"
                   >
                     {isSaving ? 'Menyimpan...' : 'Simpan Waktu'}
                   </button>
@@ -502,7 +502,7 @@ export function BlockDetail({
                     className={`rounded-full px-2.5 py-1 font-semibold ${
                       block?.dimodifikasi_manusia
                         ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300'
-                        : 'bg-indigo-50 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300'
+                        : 'bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300'
                     }`}
                   >
                     {block?.dimodifikasi_manusia
@@ -540,7 +540,7 @@ export function BlockDetail({
                   type="button"
                   disabled={isExplaining}
                   onClick={() => void handleAskWhyHere()}
-                  className="inline-flex items-center gap-1 text-[11px] font-semibold text-indigo-600 hover:text-indigo-500 dark:text-indigo-400 disabled:opacity-50"
+                  className="inline-flex items-center gap-1 text-[11px] font-semibold text-blue-600 hover:text-blue-500 dark:text-blue-400 disabled:opacity-50"
                 >
                   <span>💡</span>
                   <span>{isExplaining ? 'Menganalisis...' : 'Kenapa di sini?'}</span>

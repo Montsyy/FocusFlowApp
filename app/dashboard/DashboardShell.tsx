@@ -10,18 +10,22 @@ import { QuickActions } from '@/components/QuickActions'
 import { TaskPanel } from '@/components/TaskPanel'
 import { TaskInput } from '@/components/TaskInput'
 import { FixedEventForm } from '@/components/FixedEventForm'
-import { Calendar } from '@/components/Calendar'
 import { BlockDetail, type SelectedEventData } from '@/components/BlockDetail'
 import { EnergyCheckin } from '@/components/EnergyCheckin'
 import { RealityCheck } from '@/components/RealityCheck'
 import { StatCards } from '@/components/StatCards'
 import { AiStatusBadge } from '@/components/AiStatusBadge'
 import { TodayAgenda } from '@/components/TodayAgenda'
+import { ThemeToggle } from '@/components/ThemeToggle'
+import { OnboardingHint } from '@/components/OnboardingHint'
+import { schedule } from '@/lib/scheduler'
 import type { Task, FixedEvent, ScheduleBlock } from '@/lib/types'
 
 interface DashboardShellProps {
+  userId?: string
   userNama: string
   userEmail: string
+  initialMinggu?: string
 }
 
 function getInitialWeekStart(): string {
@@ -32,7 +36,17 @@ function getInitialWeekStart(): string {
   return sunday.toISOString().split('T')[0]
 }
 
-function DashboardContentInner({ userNama, userEmail }: DashboardShellProps) {
+function formatWeekRange(weekStartStr: string): string {
+  const start = new Date(weekStartStr)
+  const end = new Date(start.getTime() + 6 * 24 * 60 * 60 * 1000)
+  const monthNames = [
+    'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun',
+    'Jul', 'Ags', 'Sep', 'Okt', 'Nov', 'Des',
+  ]
+  return `${start.getDate()} – ${end.getDate()} ${monthNames[end.getMonth()]} ${end.getFullYear()}`
+}
+
+function DashboardContentInner({ userId, userNama, userEmail, initialMinggu }: DashboardShellProps) {
   const router = useRouter()
   const supabase = createBrowserClient()
   const { showToast } = useToast()
@@ -40,14 +54,17 @@ function DashboardContentInner({ userNama, userEmail }: DashboardShellProps) {
     scheduleBlocks,
     setScheduleBlocks,
     unplacedTasks,
+    setUnplacedTasks,
+    setCapacity,
     isGenerating,
     generateSchedule,
   } = usePlanner()
 
+  const currentMinggu = initialMinggu || getInitialWeekStart()
+
   const [mainView, setMainView] = useState<'dashboard' | 'fixed_events'>('dashboard')
-  const [mobileTab, setMobileTab] = useState<'tasks' | 'calendar' | 'metrics'>('calendar')
+  const [mobileTab, setMobileTab] = useState<'tasks' | 'agenda' | 'metrics'>('agenda')
   const [loggingOut, setLoggingOut] = useState(false)
-  const [currentMinggu, setCurrentMinggu] = useState<string>(getInitialWeekStart())
 
   const [tasks, setTasks] = useState<Task[]>([])
   const [loadingTasks, setLoadingTasks] = useState(true)
@@ -70,16 +87,58 @@ function DashboardContentInner({ userNama, userEmail }: DashboardShellProps) {
           supabase.from('schedule_blocks').select('*'),
         ])
 
-        if (isMounted) {
-          if (tData) setTasks(tData as Task[])
-          if (fData) setFixedEvents(fData as FixedEvent[])
-          if (bData) setScheduleBlocks(bData as ScheduleBlock[])
+        if (!isMounted) return
+
+        const freshTasks = (tData as Task[]) ?? []
+        const freshEvents = (fData as FixedEvent[]) ?? []
+        const freshBlocks = (bData as ScheduleBlock[]) ?? []
+
+        setTasks(freshTasks)
+        setFixedEvents(freshEvents)
+        setScheduleBlocks(freshBlocks)
+
+        const sched = schedule({
+          tasks: freshTasks,
+          fixedEvents: freshEvents,
+          existingBlocks: freshBlocks,
+          weekStart: currentMinggu,
+        })
+        setUnplacedTasks(sched.unplaced)
+        setCapacity({
+          totalRequiredMinutes: sched.totalRequiredMinutes,
+          totalAvailableMinutes: sched.totalAvailableMinutes,
+          percentage: Math.min(
+            100,
+            Math.round(
+              (sched.totalRequiredMinutes /
+                Math.max(1, sched.totalAvailableMinutes)) *
+                100
+            )
+          ),
+        })
+
+        if (typeof window !== 'undefined') {
+          const params = new URLSearchParams(window.location.search)
+          const blokId = params.get('blok')
+          if (blokId) {
+            const found = freshBlocks.find((b) => b.id === blokId)
+            if (found) {
+              const task = freshTasks.find((t) => t.id === found.task_id)
+              setSelectedEvent({
+                type: 'block',
+                id: found.id,
+                title: task?.judul || found.alasan_ai || 'Blok Jadwal',
+                start: found.mulai,
+                end: found.selesai,
+                block: found,
+              })
+            }
+          }
         }
       } catch (err) {
-        if (isMounted) {
-          const msg = err instanceof Error ? err.message : 'Gagal memuat data'
-          showToast(msg, 'error')
-        }
+        if (!isMounted) return
+        const msg = err instanceof Error ? err.message : 'Gagal memuat data'
+        showToast(msg, 'error')
       } finally {
         if (isMounted) {
           setLoadingTasks(false)
@@ -90,10 +149,48 @@ function DashboardContentInner({ userNama, userEmail }: DashboardShellProps) {
 
     void fetchData()
 
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        void fetchData()
+      }
+    }
+
+    const handleFocus = () => {
+      void fetchData()
+    }
+
+    const handlePopState = () => {
+      const params = new URLSearchParams(window.location.search)
+      const bId = params.get('blok')
+      if (bId) {
+        const found = scheduleBlocks.find((b) => b.id === bId)
+        if (found) {
+          const task = tasks.find((t) => t.id === found.task_id)
+          setSelectedEvent({
+            type: 'block',
+            id: found.id,
+            title: task?.judul || found.alasan_ai || 'Blok Jadwal',
+            start: found.mulai,
+            end: found.selesai,
+            block: found,
+          })
+        }
+      } else {
+        setSelectedEvent(null)
+      }
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    window.addEventListener('focus', handleFocus)
+    window.addEventListener('popstate', handlePopState)
+
     return () => {
       isMounted = false
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+      window.removeEventListener('focus', handleFocus)
+      window.removeEventListener('popstate', handlePopState)
     }
-  }, [supabase, showToast, setScheduleBlocks])
+  }, [supabase, currentMinggu, setScheduleBlocks, setUnplacedTasks, setCapacity, showToast, scheduleBlocks, tasks])
 
   async function reloadTasks() {
     try {
@@ -103,7 +200,27 @@ function DashboardContentInner({ userNama, userEmail }: DashboardShellProps) {
         .order('created_at', { ascending: false })
 
       if (error) throw error
-      setTasks((data as Task[]) ?? [])
+      const freshTasks = (data as Task[]) ?? []
+      setTasks(freshTasks)
+      const sched = schedule({
+        tasks: freshTasks,
+        fixedEvents,
+        existingBlocks: scheduleBlocks,
+        weekStart: currentMinggu,
+      })
+      setUnplacedTasks(sched.unplaced)
+      setCapacity({
+        totalRequiredMinutes: sched.totalRequiredMinutes,
+        totalAvailableMinutes: sched.totalAvailableMinutes,
+        percentage: Math.min(
+          100,
+          Math.round(
+            (sched.totalRequiredMinutes /
+              Math.max(1, sched.totalAvailableMinutes)) *
+              100
+          )
+        ),
+      })
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Gagal memuat tugas'
       showToast(msg, 'error')
@@ -173,13 +290,32 @@ function DashboardContentInner({ userNama, userEmail }: DashboardShellProps) {
   }
 
   async function handleDeleteTask(taskId: string) {
+    const deletedTask = tasks.find((t) => t.id === taskId)
     const prevTasks = [...tasks]
     setTasks((current) => current.filter((t) => t.id !== taskId))
 
     try {
       const { error } = await supabase.from('tasks').delete().eq('id', taskId)
       if (error) throw error
-      showToast('Tugas berhasil dihapus', 'success')
+
+      if (deletedTask) {
+        showToast('Tugas berhasil dihapus', 'success', {
+          label: 'Urungkan',
+          onClick: async () => {
+            try {
+              const { error: insErr } = await supabase.from('tasks').insert(deletedTask)
+              if (insErr) throw insErr
+              setTasks((prev) => [deletedTask, ...prev])
+              showToast('Penghapusan dibatalkan', 'success')
+              void handleAutoSchedule({ silent: true })
+            } catch {
+              showToast('Gagal memulihkan tugas', 'error')
+            }
+          },
+        })
+      } else {
+        showToast('Tugas berhasil dihapus', 'success')
+      }
       void handleAutoSchedule({ silent: true })
     } catch (err) {
       setTasks(prevTasks)
@@ -210,6 +346,14 @@ function DashboardContentInner({ userNama, userEmail }: DashboardShellProps) {
     .filter((t) => t.status !== 'done')
     .reduce((acc, t) => acc + (t.durasi_menit ?? 60), 0)
 
+  const thisWeekBlocks = scheduleBlocks.filter((b) => {
+    const bDate = b.mulai.split('T')[0]
+    const start = new Date(currentMinggu)
+    const end = new Date(start.getTime() + 7 * 24 * 60 * 60 * 1000)
+    const bTime = new Date(bDate).getTime()
+    return bTime >= start.getTime() && bTime < end.getTime()
+  })
+
   return (
     <div className="min-h-screen bg-zinc-50 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-50">
       <header className="sticky top-0 z-40 border-b border-zinc-200/80 bg-white/80 backdrop-blur-md dark:border-zinc-800/80 dark:bg-zinc-900/80">
@@ -217,7 +361,7 @@ function DashboardContentInner({ userNama, userEmail }: DashboardShellProps) {
           <div className="flex items-center gap-6">
             <Link
               href="/dashboard"
-              className="text-xl font-extrabold tracking-tight text-indigo-600 dark:text-indigo-400"
+              className="text-xl font-extrabold tracking-tight text-blue-600 dark:text-blue-400"
             >
               FocusFlow
             </Link>
@@ -228,7 +372,7 @@ function DashboardContentInner({ userNama, userEmail }: DashboardShellProps) {
                 onClick={() => setMainView('dashboard')}
                 className={`rounded-lg px-3 py-1.5 transition-all ${
                   mainView === 'dashboard'
-                    ? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300'
+                    ? 'bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300'
                     : 'text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100'
                 }`}
               >
@@ -239,7 +383,7 @@ function DashboardContentInner({ userNama, userEmail }: DashboardShellProps) {
                 onClick={() => setMainView('fixed_events')}
                 className={`rounded-lg px-3 py-1.5 transition-all ${
                   mainView === 'fixed_events'
-                    ? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300'
+                    ? 'bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300'
                     : 'text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100'
                 }`}
               >
@@ -247,13 +391,13 @@ function DashboardContentInner({ userNama, userEmail }: DashboardShellProps) {
               </button>
               <Link
                 href={`/dashboard/kalender?minggu=${currentMinggu}`}
-                className="rounded-lg px-3 py-1.5 text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
+                className="rounded-lg px-3 py-1.5 text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 transition-all"
               >
                 Kalender Penuh
               </Link>
               <Link
                 href="/dashboard/refleksi"
-                className="rounded-lg px-3 py-1.5 text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
+                className="rounded-lg px-3 py-1.5 text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 transition-all"
               >
                 Refleksi
               </Link>
@@ -267,7 +411,7 @@ function DashboardContentInner({ userNama, userEmail }: DashboardShellProps) {
               type="button"
               disabled={isGenerating}
               onClick={() => void handleAutoSchedule()}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-indigo-600 to-blue-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:from-indigo-500 hover:to-blue-500 disabled:opacity-50 transition-all"
+              className="inline-flex items-center gap-1.5 rounded-xl bg-blue-600 px-3.5 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-blue-500 disabled:opacity-50 transition-all focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-zinc-900"
             >
               {isGenerating ? (
                 <>
@@ -282,6 +426,8 @@ function DashboardContentInner({ userNama, userEmail }: DashboardShellProps) {
               )}
             </button>
 
+            <ThemeToggle />
+
             <div className="hidden sm:block text-right">
               <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
                 Halo, {userNama}
@@ -295,7 +441,7 @@ function DashboardContentInner({ userNama, userEmail }: DashboardShellProps) {
               type="button"
               onClick={handleSignOut}
               disabled={loggingOut}
-              className="rounded-lg bg-zinc-900 px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-zinc-800 disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
+              className="rounded-lg bg-zinc-900 px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-zinc-800 disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200 transition-all"
             >
               {loggingOut ? 'Keluar...' : 'Keluar'}
             </button>
@@ -307,45 +453,70 @@ function DashboardContentInner({ userNama, userEmail }: DashboardShellProps) {
             <button
               type="button"
               onClick={() => setMobileTab('tasks')}
-              className={`flex-1 rounded-lg py-1.5 text-center ${
+              className={`flex-1 rounded-lg py-1.5 text-center transition-all ${
                 mobileTab === 'tasks'
-                  ? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300'
-                  : 'text-zinc-600'
+                  ? 'bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300'
+                  : 'text-zinc-600 dark:text-zinc-400'
               }`}
             >
               Tugas ({tasks.length})
             </button>
             <button
               type="button"
-              onClick={() => setMobileTab('calendar')}
-              className={`flex-1 rounded-lg py-1.5 text-center ${
-                mobileTab === 'calendar'
-                  ? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300'
-                  : 'text-zinc-600'
+              onClick={() => setMobileTab('agenda')}
+              className={`flex-1 rounded-lg py-1.5 text-center transition-all ${
+                mobileTab === 'agenda'
+                  ? 'bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300'
+                  : 'text-zinc-600 dark:text-zinc-400'
               }`}
             >
-              Kalender
+              Hari Ini & Kapasitas
             </button>
             <button
               type="button"
               onClick={() => setMobileTab('metrics')}
-              className={`flex-1 rounded-lg py-1.5 text-center ${
+              className={`flex-1 rounded-lg py-1.5 text-center transition-all ${
                 mobileTab === 'metrics'
-                  ? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300'
-                  : 'text-zinc-600'
+                  ? 'bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300'
+                  : 'text-zinc-600 dark:text-zinc-400'
               }`}
             >
-              Aksi & Metrik
+              Energi & Aksi
             </button>
           </div>
         )}
       </header>
 
-      <main className="mx-auto max-w-7xl p-4 sm:p-6 lg:p-8">
+      <main className="mx-auto max-w-7xl p-4 sm:p-6 lg:p-8 flex flex-col gap-6">
+        <OnboardingHint userId={userId || userEmail || 'user'} />
+
+        {new Date().getDay() === 0 && (
+          <div className="rounded-2xl border border-blue-100 bg-gradient-to-r from-blue-50/90 via-sky-50/70 to-indigo-50/60 p-4 sm:p-5 shadow-sm dark:border-blue-900/40 dark:from-blue-950/40 dark:via-sky-950/30 dark:to-indigo-950/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-in fade-in duration-300">
+            <div className="flex items-center gap-3">
+              <span className="text-2xl shrink-0">🌟</span>
+              <div>
+                <h3 className="text-xs sm:text-sm font-bold text-blue-950 dark:text-blue-200">
+                  Hari Minggu: Waktunya Refleksi Mingguan!
+                </h3>
+                <p className="mt-0.5 text-[11px] sm:text-xs text-blue-700/80 dark:text-blue-300/80 leading-relaxed">
+                  Evaluasi pencapaian belajarmu minggu ini, evaluasi ritme energi, dan siapkan fokus terbaik untuk minggu depan.
+                </p>
+              </div>
+            </div>
+            <Link
+              href="/dashboard/refleksi"
+              className="inline-flex items-center gap-1.5 self-start sm:self-auto shrink-0 whitespace-nowrap rounded-xl bg-blue-600 px-3.5 py-2 text-xs font-semibold text-white shadow-sm hover:bg-blue-500 transition-all"
+            >
+              <span>Mulai Refleksi Mingguan</span>
+              <span>→</span>
+            </Link>
+          </div>
+        )}
+
         {mainView === 'dashboard' ? (
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
             <div
-              className={`lg:col-span-3 ${
+              className={`lg:col-span-4 ${
                 mobileTab === 'tasks' ? 'block' : 'hidden lg:block'
               }`}
             >
@@ -366,8 +537,8 @@ function DashboardContentInner({ userNama, userEmail }: DashboardShellProps) {
             </div>
 
             <div
-              className={`lg:col-span-6 flex flex-col gap-4 ${
-                mobileTab === 'calendar' ? 'block' : 'hidden lg:block'
+              className={`lg:col-span-5 flex flex-col gap-5 ${
+                mobileTab === 'agenda' ? 'block' : 'hidden lg:block'
               }`}
             >
               <TodayAgenda
@@ -376,18 +547,81 @@ function DashboardContentInner({ userNama, userEmail }: DashboardShellProps) {
                 currentMinggu={currentMinggu}
                 onToggleTaskStatus={handleToggleTaskStatus}
               />
-              <Calendar
-                fixedEvents={fixedEvents}
-                scheduleBlocks={scheduleBlocks}
-                tasks={tasks}
-                onSelectEvent={setSelectedEvent}
-                onWeekChange={(iso) => setCurrentMinggu(iso)}
-                editable={false}
+
+              <RealityCheck
+                variant="full"
+                totalEstimatedMinutes={totalEstimatedMinutes}
+                unplacedTasks={unplacedTasks}
+                onTaskUpdated={reloadTasks}
               />
+
+              <div className="rounded-2xl border border-zinc-200 bg-white p-5 sm:p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 flex flex-col justify-between gap-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-400">
+                      📅
+                    </span>
+                    <div>
+                      <h3 className="text-xs font-bold text-zinc-900 dark:text-zinc-100">
+                        Jadwal Kalender Mingguan
+                      </h3>
+                      <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
+                        {formatWeekRange(currentMinggu)} • {thisWeekBlocks.length} blok teralokasi
+                      </p>
+                    </div>
+                  </div>
+
+                  <Link
+                    href={`/dashboard/kalender?minggu=${currentMinggu}`}
+                    className="inline-flex items-center gap-1.5 rounded-xl bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-blue-500 transition-all"
+                  >
+                    <span>Buka Kalender Penuh</span>
+                    <span>→</span>
+                  </Link>
+                </div>
+
+                <p className="text-xs text-zinc-600 dark:text-zinc-300 leading-relaxed">
+                  Kalender penuh menampilkan tampilan waktu 24 jam interaktif, dukungan drag & drop, pengubahan durasi, penguncian jadwal, dan sinkronisasi otomatis.
+                </p>
+
+                {thisWeekBlocks.length > 0 ? (
+                  <div className="rounded-xl border border-zinc-100 bg-zinc-50/60 p-3 dark:border-zinc-800/80 dark:bg-zinc-800/40 flex flex-col gap-1.5">
+                    <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">
+                      Cuplikan Blok Terjadwal Minggu Ini
+                    </span>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-1">
+                      {thisWeekBlocks.slice(0, 4).map((b) => {
+                        const task = tasks.find((t) => t.id === b.task_id)
+                        const sTime = b.mulai.split('T')[1]?.substring(0, 5) || ''
+                        const eTime = b.selesai.split('T')[1]?.substring(0, 5) || ''
+                        return (
+                          <div
+                            key={b.id}
+                            className="rounded-lg border border-zinc-200 bg-white p-2 text-xs shadow-2xs dark:border-zinc-700/60 dark:bg-zinc-800 flex items-center justify-between"
+                          >
+                            <span className="truncate max-w-[120px] font-medium text-zinc-800 dark:text-zinc-200">
+                              {task?.judul || b.alasan_ai || 'Blok Fokus'}
+                            </span>
+                            <span className="text-[10px] font-semibold text-blue-600 dark:text-blue-400">
+                              {sTime}-{eTime}
+                            </span>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="rounded-xl border border-dashed border-zinc-200 p-4 text-center dark:border-zinc-800">
+                    <p className="text-xs text-zinc-400">
+                      Belum ada blok jadwal di minggu ini. Klik &quot;Susun Jadwal&quot; di atas untuk menyusun otomatis dengan AI!
+                    </p>
+                  </div>
+                )}
+              </div>
             </div>
 
             <div
-              className={`lg:col-span-3 flex flex-col gap-6 lg:pl-3 ${
+              className={`lg:col-span-3 flex flex-col gap-6 ${
                 mobileTab === 'metrics' ? 'block' : 'hidden lg:block'
               }`}
             >
@@ -398,11 +632,6 @@ function DashboardContentInner({ userNama, userEmail }: DashboardShellProps) {
                 }}
                 onManageFixedEvents={() => setMainView('fixed_events')}
                 currentMinggu={currentMinggu}
-              />
-              <RealityCheck
-                totalEstimatedMinutes={totalEstimatedMinutes}
-                unplacedTasks={unplacedTasks}
-                onTaskUpdated={reloadTasks}
               />
               <StatCards tasks={tasks} />
               <EnergyCheckin />
@@ -415,7 +644,7 @@ function DashboardContentInner({ userNama, userEmail }: DashboardShellProps) {
                   <button
                     type="button"
                     onClick={() => setMainView('fixed_events')}
-                    className="text-[11px] font-semibold text-indigo-600 dark:text-indigo-400 hover:underline"
+                    className="text-[11px] font-semibold text-blue-600 dark:text-blue-400 hover:underline"
                   >
                     Kelola
                   </button>

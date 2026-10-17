@@ -253,8 +253,8 @@ export function TaskInput({ initialData, isOpen, onClose, onSave }: TaskInputPro
         )}
 
         {!initialData && (
-          <div className="mt-4 rounded-xl border border-indigo-100 bg-indigo-50/50 p-3.5 dark:border-indigo-900/40 dark:bg-indigo-950/20">
-            <label className="block text-xs font-bold text-indigo-900 dark:text-indigo-200">
+          <div className="mt-4 rounded-xl border border-blue-100 bg-blue-50/50 p-3.5 dark:border-blue-900/40 dark:bg-blue-950/20">
+            <label className="block text-xs font-bold text-blue-900 dark:text-blue-200">
               ✨ Analisis Cepat dengan AI
             </label>
             <p className="mt-0.5 text-[11px] text-zinc-500 dark:text-zinc-400">
@@ -272,14 +272,14 @@ export function TaskInput({ initialData, isOpen, onClose, onSave }: TaskInputPro
                   }
                 }}
                 placeholder="Tulis deskripsi tugas..."
-                className="flex-1 min-w-[200px] rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-xs text-zinc-900 focus:border-indigo-500 focus:outline-none dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
+                className="flex-1 min-w-[200px] rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-xs text-zinc-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
               />
               <button
                 type="button"
                 disabled={aiLoading || !aiPrompt.trim()}
                 onClick={handleAiParse}
                 title="Isi formulir di bawah dengan hasil analisis AI untuk ditinjau"
-                className="rounded-lg border border-indigo-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-indigo-700 shadow-sm hover:bg-indigo-50 disabled:opacity-50 transition-colors shrink-0 dark:border-indigo-800 dark:bg-zinc-800 dark:text-indigo-300"
+                className="rounded-lg border border-blue-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-blue-700 shadow-sm hover:bg-blue-50 disabled:opacity-50 transition-colors shrink-0 dark:border-blue-800 dark:bg-zinc-800 dark:text-blue-300"
               >
                 {aiLoading ? 'Memproses...' : '📝 Isi Form'}
               </button>
@@ -288,7 +288,7 @@ export function TaskInput({ initialData, isOpen, onClose, onSave }: TaskInputPro
                 disabled={aiLoading || !aiPrompt.trim()}
                 onClick={handleAiQuickAdd}
                 title="Analisis dan langsung tempatkan tugas ke kalender"
-                className="rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-indigo-500 disabled:opacity-50 transition-colors flex items-center gap-1 shrink-0"
+                className="rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-blue-500 disabled:opacity-50 transition-colors flex items-center gap-1 shrink-0"
               >
                 <span>⚡</span>
                 <span>{aiLoading ? 'Menjadwalkan...' : 'Jadwalkan Langsung'}</span>
@@ -308,7 +308,7 @@ export function TaskInput({ initialData, isOpen, onClose, onSave }: TaskInputPro
               value={judul}
               onChange={(e) => setJudul(e.target.value)}
               placeholder="Contoh: Laporan Akhir Praktikum Basis Data"
-              className="mt-1 w-full rounded-xl border border-zinc-300 bg-white px-3.5 py-2 text-sm text-zinc-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
+              className="mt-1 w-full rounded-xl border border-zinc-300 bg-white px-3.5 py-2 text-sm text-zinc-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
             />
           </div>
 
@@ -321,7 +321,7 @@ export function TaskInput({ initialData, isOpen, onClose, onSave }: TaskInputPro
                 type="datetime-local"
                 value={deadline}
                 onChange={(e) => setDeadline(e.target.value)}
-                className="mt-1 w-full rounded-xl border border-zinc-300 bg-white px-3.5 py-2 text-sm text-zinc-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
+                className="mt-1 w-full rounded-xl border border-zinc-300 bg-white px-3.5 py-2 text-sm text-zinc-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
               />
             </div>
 
@@ -335,7 +335,7 @@ export function TaskInput({ initialData, isOpen, onClose, onSave }: TaskInputPro
                 step={15}
                 value={durasiMenit}
                 onChange={(e) => setDurasiMenit(parseInt(e.target.value, 10) || 60)}
-                className="mt-1 w-full rounded-xl border border-zinc-300 bg-white px-3.5 py-2 text-sm text-zinc-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
+                className="mt-1 w-full rounded-xl border border-zinc-300 bg-white px-3.5 py-2 text-sm text-zinc-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
               />
             </div>
           </div>
@@ -353,7 +353,7 @@ export function TaskInput({ initialData, isOpen, onClose, onSave }: TaskInputPro
                     onClick={() => setKesulitan(lvl)}
                     className={`flex-1 rounded-lg py-1.5 text-xs font-bold transition-all ${
                       kesulitan === lvl
-                        ? 'bg-indigo-600 text-white shadow-sm'
+                        ? 'bg-blue-600 text-white shadow-sm'
                         : 'border border-zinc-200 bg-zinc-50 text-zinc-700 hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300'
                     }`}
                   >
@@ -375,7 +375,7 @@ export function TaskInput({ initialData, isOpen, onClose, onSave }: TaskInputPro
                     onClick={() => setKepentingan(lvl)}
                     className={`flex-1 rounded-lg py-1.5 text-xs font-bold transition-all ${
                       kepentingan === lvl
-                        ? 'bg-indigo-600 text-white shadow-sm'
+                        ? 'bg-blue-600 text-white shadow-sm'
                         : 'border border-zinc-200 bg-zinc-50 text-zinc-700 hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300'
                     }`}
                   >
@@ -393,7 +393,7 @@ export function TaskInput({ initialData, isOpen, onClose, onSave }: TaskInputPro
                 type="checkbox"
                 checked={canSplit}
                 onChange={(e) => setCanSplit(e.target.checked)}
-                className="h-4 w-4 rounded border-zinc-300 text-indigo-600 focus:ring-indigo-500"
+                className="h-4 w-4 rounded border-zinc-300 text-blue-600 focus:ring-blue-500"
               />
               <label htmlFor="canSplit" className="text-xs font-medium text-zinc-700 dark:text-zinc-300">
                 Bisa dipecah jadi beberapa sesi
@@ -411,7 +411,7 @@ export function TaskInput({ initialData, isOpen, onClose, onSave }: TaskInputPro
                   max={10}
                   value={sesiDisarankan}
                   onChange={(e) => setSesiDisarankan(parseInt(e.target.value, 10) || 1)}
-                  className="mt-1 w-full rounded-xl border border-zinc-300 bg-white px-3.5 py-1.5 text-sm text-zinc-900 focus:border-indigo-500 focus:outline-none dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
+                  className="mt-1 w-full rounded-xl border border-zinc-300 bg-white px-3.5 py-1.5 text-sm text-zinc-900 focus:border-blue-500 focus:outline-none dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
                 />
               </div>
             )}
@@ -424,7 +424,7 @@ export function TaskInput({ initialData, isOpen, onClose, onSave }: TaskInputPro
             <select
               value={status}
               onChange={(e) => setStatus(e.target.value as 'todo' | 'in_progress' | 'done')}
-              className="mt-1 w-full rounded-xl border border-zinc-300 bg-white px-3.5 py-2 text-sm text-zinc-900 focus:border-indigo-500 focus:outline-none dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
+              className="mt-1 w-full rounded-xl border border-zinc-300 bg-white px-3.5 py-2 text-sm text-zinc-900 focus:border-blue-500 focus:outline-none dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
             >
               <option value="todo">Belum Dimulai (Todo)</option>
               <option value="in_progress">Sedang Dikerjakan (In Progress)</option>
@@ -443,7 +443,7 @@ export function TaskInput({ initialData, isOpen, onClose, onSave }: TaskInputPro
             <button
               type="submit"
               disabled={loading}
-              className="rounded-xl bg-indigo-600 px-5 py-2 text-xs font-semibold text-white shadow-md shadow-indigo-500/20 hover:bg-indigo-500 disabled:opacity-50 flex items-center gap-1.5"
+              className="rounded-xl bg-blue-600 px-5 py-2 text-xs font-semibold text-white shadow-md shadow-blue-500/20 hover:bg-blue-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 disabled:opacity-50 flex items-center gap-1.5"
             >
               <span>✨</span>
               <span>

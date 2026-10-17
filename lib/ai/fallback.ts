@@ -22,8 +22,11 @@ export interface ExplainBlockResult {
 export interface ReflectWeekContext {
   completedTasks?: number
   totalTasks?: number
+  missedTasks?: number
+  completionRate?: number
   energyAverage?: number
   totalHours?: number
+  mostProductiveTimeWindow?: string
 }
 
 export interface ReflectWeekResult {
@@ -86,12 +89,19 @@ export function batchExplainFallback(items: BatchExplainItem[]): BatchExplainRes
 export function reflectWeekFallback(context: ReflectWeekContext): ReflectWeekResult {
   const completed = context.completedTasks ?? 0
   const total = context.totalTasks ?? 0
+  const missed = context.missedTasks ?? 0
   const hours = context.totalHours ?? 0
+  const window = context.mostProductiveTimeWindow || 'pagi'
+
+  const missedNote =
+    missed > 0
+      ? ` Terdapat ${missed} tugas tertunda yang dapat dijadwalkan ulang.`
+      : ' Seluruh target tugas mingguan tercapai dengan baik!'
 
   return {
-    summary: `Minggu ini Anda telah menyelesaikan ${completed} dari ${total} tugas (${hours} jam waktu fokus). Kerja bagus untuk menjaga kemajuan belajarmu!`,
-    best_time_window: 'pagi',
+    summary: `Minggu ini Anda telah menyelesaikan ${completed} dari ${total} tugas dengan ${hours} jam waktu fokus terjadwal.${missedNote} Waktu paling optimal Anda adalah pada sesi ${window}.`,
+    best_time_window: window,
     reflection_question:
-      'Bagaimana perasaanmu tentang keseimbangan antara waktu belajar dan istirahat pada minggu ini?',
+      'Bagaimana ritme belajarmu minggu ini, dan apa satu hal yang ingin kamu sesuaikan untuk menjaga fokus minggu depan?',
   }
 }

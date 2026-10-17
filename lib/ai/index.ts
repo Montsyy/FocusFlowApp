@@ -210,9 +210,11 @@ export async function reflectWeek(
   const systemInstruction = `Kamu adalah asisten refleksi mingguan mahasiswa. Buat ringkasan pencapaian dan satu pertanyaan refleksi bermakna dalam Bahasa Indonesia.`
 
   const prompt = `Data mingguan mahasiswa:
-Tugas selesai: ${context.completedTasks ?? 0} dari ${context.totalTasks ?? 0}
-Rata-rata energi: ${context.energyAverage ?? 3}/5
-Total jam fokus: ${context.totalHours ?? 0} jam`
+- Tugas selesai: ${context.completedTasks ?? 0} dari ${context.totalTasks ?? 0} (Tingkat penyelesaian: ${context.completionRate ?? 0}%)
+- Tugas meleset/tertunda: ${context.missedTasks ?? 0}
+- Waktu paling produktif: ${context.mostProductiveTimeWindow ?? 'pagi'}
+- Rata-rata energi: ${context.energyAverage ?? 3}/5
+- Total jam fokus: ${context.totalHours ?? 0} jam`
 
   try {
     const result = await generateStructured<ReflectWeekResult>(

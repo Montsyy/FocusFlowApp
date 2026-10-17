@@ -11,10 +11,140 @@
 - [x] **Phase 8: Schedule Generation and Energy Check-in**
 - [x] **Phase 9: Human Override**
 - [x] **Phase 10: Reality Check and Replan**
-- [ ] **Phase 11: Drag-and-Drop Override & Human Agency**
-- [ ] **Phase 12: Weekly Reflection & Analytics**
+- [x] **Phase 11: Weekly Reflection**
+- [x] **Phase 12: UI Polish and Responsiveness**
 - [ ] **Phase 13: Supabase Keepalive & Production Resilience**
 - [ ] **Phase 14: Polishing, Testing, & Deployment Preparation**
+
+---
+
+## Log Fase 12: UI Polish and Responsiveness
+
+### Item Selesai
+1. Desain Sistem Konsisten & Visual Hierarchy:
+   - Menyelaraskan seluruh palet warna dengan warna utama biru (`blue-600`), kartu berujung bulat (`rounded-2xl`), tipografi modern, spasi proporsional, dan hirarki visual yang bersih dan rapi.
+   - Mengganti seluruh sisa warna `indigo` pada tombol, slider, badge, dan modal ke varian warna `blue`.
+2. Implementasi Mode Gelap (*Dark Mode*) Terintegrasi:
+   - Mendefinisikan `@custom-variant dark (&:where(.dark, .dark *));` pada `app/globals.css` untuk kompatibilitas penuh dengan Tailwind CSS v4.
+   - Script inisialisasi tema instan di `<head>` pada `app/layout.tsx` yang dibungkus `try/catch` untuk mencegah kedipan layar (*FOUC / SSR flash*).
+   - Komponen `components/ThemeToggle.tsx` berbasis `useSyncExternalStore` dengan pembacaan dan penyimpanan ke `localStorage` berbalut `try/catch`, secara default mengikuti preferensi sistem (`prefers-color-scheme: dark`).
+   - Ikon matahari (mode terang) dan bulan (mode gelap) dengan transisi mulus dan atribut aksesibilitas (`aria-label`, `title`).
+3. Loading Skeletons, Empty States & Notifikasi Toast:
+   - Komponen `components/LoadingSkeleton.tsx` yang menyediakan `TaskListSkeleton`, `AgendaSkeleton`, dan `StatCardsSkeleton` dengan efek *pulse* halus saat memuat data.
+   - Keadaan kosong (*empty states*) informatif dengan ilustrasi emoji ramah dan tombol aksi di `TaskPanel`, `TodayAgenda`, `FixedEventForm`, `RefleksiShell`, dan `UnplacedDecisionList`.
+   - Notifikasi toast diperluas dengan aksi undo ("Urungkan") saat tugas dihapus, memungkinkan pemulihan data tugas secara instan.
+4. Petunjuk Orientasi (*Onboarding Hint*):
+   - Komponen `components/OnboardingHint.tsx` dengan banner elegan yang menjelaskan prinsip "AI menyusun saran, kamu yang memegang kendali penuh".
+   - Dilengkapi tombol penutup "Paham, Saya Pegang Kendali" yang mengingat preferensi penutupan per pengguna (`focusflow_onboarding_dismissed_${userId}`) di `localStorage`.
+5. Legenda Warna & Lencana AI:
+   - Komponen `components/ScheduleLegend.tsx` pada kalender yang merinci arti warna blok: Biru (Rencana AI), Hijau Emerald (Disetujui/Diedit Manusia), Gembok 🔒 (Terkunci), Abu-abu (Jadwal Tetap), dan badge `✨ AI`.
+   - Setiap blok jadwal yang memiliki `alasan_ai` kini menampilkan badge pill `✨ AI` di FullCalendar.
+6. Animasi Penyusunan Jadwal Halus:
+   - Efek kemunculan blok bertahap (*progressive entrance animation*) via `@keyframes blockAppear` pada FullCalendar timegrid.
+7. Aksesibilitas (A11y):
+   - Penambahan `aria-label` eksplisit pada checkbox tugas, slider energi (Pagi, Siang, Malam), tombol navigasi minggu, tombol tema, dan tombol aksi.
+   - Penegasan fokus interaktif dengan `focus-visible:ring-2 focus-visible:ring-blue-500` dan rasio kontras warna tinggi di mode terang maupun gelap.
+8. Uji Responsivitas & Pemisahan Halaman (*Page Separation*):
+   - `/dashboard` bersih tanpa grid kalender penuh: menampilkan `TodayAgenda`, `RealityCheck` (`variant="full"`), dan kartu pratinjau kalender mingguan berarah link `/dashboard/kalender?minggu=...`.
+   - `/dashboard/kalender` khusus visualisasi jadwal tanpa panel daftar tugas atau slider energi.
+   - Parameter URL `?minggu=YYYY-MM-DD` tersinkronisasi dan bertahan saat berpindah antar-halaman.
+   - Deep-link `?blok=<id>` otomatis membuka laci detail blok (`BlockDetail`).
+   - Sinkronisasi data otomatis via listener `focus` dan `visibilitychange` di kedua halaman tanpa perlu refresh manual.
+   - Tata letak responsif telah diverifikasi di ukuran mobile (375px), tablet (768px), dan desktop (1280px) tanpa *overflow* horizontal.
+9. Validasi Kode & Pengujian:
+   - 119 pengujian Vitest lulus 100%.
+   - 0 TypeScript error (`npx tsc --noEmit`).
+   - 0 ESLint error & warning (`npm run lint`).
+   - Kompilasi produksi Next.js build sukses (`npm run build`).
+
+### File yang Dibuat atau Diubah
+- `app/globals.css`
+- `app/layout.tsx`
+- `components/ThemeToggle.tsx`
+- `components/OnboardingHint.tsx`
+- `components/ScheduleLegend.tsx`
+- `components/LoadingSkeleton.tsx`
+- `components/Calendar.tsx`
+- `components/TodayAgenda.tsx`
+- `components/TodayAgenda.test.tsx`
+- `components/TaskPanel.tsx`
+- `components/FixedEventForm.tsx`
+- `components/TaskInput.tsx`
+- `components/StatCards.tsx`
+- `components/RealityCheck.tsx`
+- `components/UnplacedDecisionList.tsx`
+- `components/EnergyCheckin.tsx`
+- `components/BlockDetail.tsx`
+- `components/CalendarToolbar.tsx`
+- `components/Toast.tsx`
+- `components/QuickActions.tsx`
+- `app/dashboard/DashboardContent.tsx`
+- `app/dashboard/DashboardShell.tsx`
+- `app/dashboard/kalender/KalenderShell.tsx`
+- `app/dashboard/refleksi/RefleksiShell.tsx`
+- `PROGRESS.md`
+
+### Keputusan Desain / Teknis
+- Memisahkan kalender penuh hanya pada rute `/dashboard/kalender` untuk memberikan pengalaman eksekusi harian yang cepat dan terfokus di `/dashboard`.
+- Menggunakan `useSyncExternalStore` pada `ThemeToggle` dan `OnboardingHint` untuk menghubungkan state ke `localStorage` dan media queries sistem operasi tanpa cascading renders.
+- Menerapkan listener event `visibilitychange` dan `focus` di client component untuk sinkronisasi otomatis antar-halaman secara transparan bagi pengguna.
+
+---
+
+## Log Fase 11: Weekly Reflection
+
+### Item Selesai
+1. Modul Kalkulasi Statistik Mingguan Murni (`lib/stats/reflection.ts`):
+   - Fungsi murni `computeWeeklyStats(tasks, blocks, energyLogs)` tanpa dependensi eksternal.
+   - Menghitung `totalTasks`, `completedTasks` (`status === 'selesai' || 'done'`), `missedTasks` (tugas belum selesai dengan deadline telah lewat sebelum/pada akhir minggu), `completionRate` (persentase bulat 0..100%).
+   - Menghitung `totalFocusMinutes` dan `totalFocusHours` (dibulatkan 1 desimal) dari akumulasi durasi blok jadwal.
+   - Menentukan `mostProductiveTimeWindow` ('pagi' | 'siang' | 'malam') secara deterministik berdasarkan total menit fokus tertinggi per jendela waktu.
+   - Menghitung `energyAverage` (dibulatkan 1 desimal) dari rata-rata nilai slider `(pagi + siang + malam) / 3` pada log energi minggu tersebut.
+2. Integrasi AI Failover Router & Template Fallback (`lib/ai/` & `app/api/reflect/route.ts`):
+   - Memperluas skema dan prompt `reflectWeek` di `lib/ai/index.ts` untuk menerima statistik lengkap (`completionRate`, `missedTasks`, `mostProductiveTimeWindow`, `totalHours`).
+   - Menyempurnakan template fallback deterministik di `lib/ai/fallback.ts` (`reflectWeekFallback`) dalam Bahasa Indonesia yang kontekstual dan menggunakan seluruh angka statistik terhitung jika provider AI mengalami kegagalan/timeout.
+   - Implementasi endpoint `POST /api/reflect` yang dilindungi autentikasi: mengumpulkan tugas, blok jadwal, dan log energi untuk minggu tertentu, menjalankan `computeWeeklyStats`, menanyakan failover router AI untuk `{ summary, best_time_window, reflection_question }`, dan mengembalikan `{ stats, reflection, data, meta: { provider, model, fallbackUsed } }`.
+3. Halaman Refleksi Interaktif `/dashboard/refleksi`:
+   - Dibuat menggunakan kombinasi Server Component (`RefleksiContent.tsx`) dan Client Component (`RefleksiShell.tsx`).
+   - 5 kartu metrik statistik teratas: Tingkat Penyelesaian (%), Total Jam Fokus (jam), Jendela Waktu Terbaik, Rata-rata Energi (/5), dan Tugas Meleset.
+   - Kartu Ringkasan AI Mingguan dengan lencana status provider/fallback dan tombol "✨ Segarkan Analisis AI" asinkron.
+   - Kartu Pertanyaan Refleksi terpandu dengan textarea respons pribadi pengguna dan tombol "💾 Simpan Refleksi".
+   - Persistensi ke tabel Supabase `reflections` dengan jaminan keunikan per pengguna dan per minggu (`user_id, minggu`).
+4. Riwayat Refleksi Masa Lalu (*History List*):
+   - Mendaftar seluruh catatan refleksi sebelumnya secara kronologis di bagian bawah halaman.
+   - Menampilkan rentang tanggal minggu, ringkasan AI, dan jawaban/komitmen pengguna, dengan tombol "Buka di Editor" untuk memuat kembali refleksi minggu lampau ke form aktif.
+   - Menyediakan tampilan *empty state* yang informatif dan ramah ketika belum ada riwayat.
+5. Integrasi Header & Prompt Ramah di Hari Minggu:
+   - Tautan navigasi aktif "Refleksi" di header dashboard.
+   - Banner prompt ramah di hari Minggu (`new Date().getDay() === 0`) pada bagian atas `/dashboard` yang mengajak pengguna menyempatkan 3 menit merefleksikan pencapaian minggunya dengan tombol aksi langsung "Mulai Refleksi Mingguan →".
+6. Pengujian Komprehensif:
+   - `lib/stats/reflection.test.ts`: 6 pengujian unit untuk verifikasi 100% completion rate, tugas meleset, waktu fokus, jendela terbaik, rata-rata energi, dan kondisi minggu kosong.
+   - `app/api/reflect/route.test.ts`: 3 pengujian integrasi rute API untuk memverifikasi proteksi 401 unauthenticated, respons sukses AI dengan komputasi statistik, dan penanganan fallback graceful saat Gemini/AI gagal.
+   - `app/dashboard/refleksi/RefleksiShell.test.tsx`: Pengujian SSR/komponen untuk verifikasi rendering 5 kartu statistik, ringkasan AI, form textarea, tombol simpan, dan daftar riwayat refleksi.
+   - Seluruh 119 pengujian Vitest (20 file) sukses 100%, 0 lint error/warning, 0 TypeScript error, dan kompilasi Next.js build sukses.
+   - Verifikasi antarmuka visual browser berhasil terekam (pengisian form refleksi, penyimpanan ke database, kemunculan di riwayat refleksi, dan link header).
+
+### File yang Dibuat atau Diubah
+- `lib/stats/reflection.ts`
+- `lib/stats/reflection.test.ts`
+- `lib/ai/fallback.ts`
+- `lib/ai/index.ts`
+- `app/api/reflect/route.ts`
+- `app/api/reflect/route.test.ts`
+- `app/dashboard/refleksi/page.tsx`
+- `app/dashboard/refleksi/RefleksiContent.tsx`
+- `app/dashboard/refleksi/RefleksiShell.tsx`
+- `app/dashboard/refleksi/RefleksiShell.test.tsx`
+- `app/dashboard/DashboardShell.tsx`
+- `PROGRESS.md`
+
+### Keputusan Desain / Teknis
+- Memisahkan kalkulasi metrik ke dalam modul `lib/stats/reflection.ts` murni tanpa dependensi eksternal, sehingga hasil perhitungan completion rate, jam fokus, jendela terbaik, dan rata-rata energi selalu 100% konsisten antara API endpoint, server components, dan pengujian unit.
+- Menjamin persistensi refleksi unik per pengguna dan per minggu dengan melakukan pengecekan `select id from reflections where user_id = ... and minggu = ...` sebelum melakukan insert atau update, menjaga kepatuhan integritas data.
+- Menjamin keandalan tinggi (*graceful degradation*): jika provider AI kehabisan kuota atau mengalami timeout, `reflectWeekFallback` secara otomatis menyusun ringkasan dan pertanyaan refleksi berbasis template berbahasa Indonesia menggunakan data statistik yang dihitung nyata.
+
+### Fase Berikutnya
+- **Phase 12: Supabase Keepalive & Production Resilience**
 
 ---
 

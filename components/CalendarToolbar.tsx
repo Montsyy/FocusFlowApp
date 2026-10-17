@@ -26,23 +26,26 @@ export function CalendarToolbar({
           <button
             type="button"
             onClick={onPrev}
+            aria-label="Minggu Sebelumnya"
             title="Minggu Sebelumnya"
-            className="rounded-lg px-2.5 py-1 text-xs font-bold text-zinc-700 hover:bg-white hover:shadow-sm dark:text-zinc-300 dark:hover:bg-zinc-700 transition-all"
+            className="rounded-lg px-2.5 py-1 text-xs font-bold text-zinc-700 hover:bg-white hover:shadow-sm dark:text-zinc-300 dark:hover:bg-zinc-700 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
           >
             ◀
           </button>
           <button
             type="button"
             onClick={onToday}
-            className="rounded-lg px-3 py-1 text-xs font-semibold text-zinc-700 hover:bg-white hover:shadow-sm dark:text-zinc-300 dark:hover:bg-zinc-700 transition-all"
+            aria-label="Kembali ke Hari Ini"
+            className="rounded-lg px-3 py-1 text-xs font-semibold text-zinc-700 hover:bg-white hover:shadow-sm dark:text-zinc-300 dark:hover:bg-zinc-700 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
           >
             Hari Ini
           </button>
           <button
             type="button"
             onClick={onNext}
+            aria-label="Minggu Berikutnya"
             title="Minggu Berikutnya"
-            className="rounded-lg px-2.5 py-1 text-xs font-bold text-zinc-700 hover:bg-white hover:shadow-sm dark:text-zinc-300 dark:hover:bg-zinc-700 transition-all"
+            className="rounded-lg px-2.5 py-1 text-xs font-bold text-zinc-700 hover:bg-white hover:shadow-sm dark:text-zinc-300 dark:hover:bg-zinc-700 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
           >
             ▶
           </button>
@@ -127,7 +130,7 @@ export function CalendarToolbar({
               showCalendarLink: false,
             })
           }
-          className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-indigo-600 to-blue-600 px-3.5 py-1.5 text-xs font-semibold text-white shadow-sm hover:from-indigo-500 hover:to-blue-500 disabled:opacity-50 transition-all"
+          className="inline-flex items-center gap-1.5 rounded-xl bg-blue-600 px-3.5 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-blue-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 disabled:opacity-50 transition-all"
         >
           {isGenerating ? (
             <>

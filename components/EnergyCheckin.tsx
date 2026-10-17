@@ -183,7 +183,7 @@ export function EnergyCheckin({ onSaved }: EnergyCheckinProps) {
               <span>🌅</span>
               <span>Pagi (06:00 - 12:00)</span>
             </span>
-            <span className="text-indigo-600 dark:text-indigo-400">
+            <span className="text-blue-600 dark:text-blue-400">
               {pagi}/5 • {ENERGY_LEVEL_LABELS[pagi]}
             </span>
           </div>
@@ -194,8 +194,9 @@ export function EnergyCheckin({ onSaved }: EnergyCheckinProps) {
             step="1"
             value={pagi}
             disabled={loading}
+            aria-label="Energi Pagi (skala 1 sampai 5)"
             onChange={(e) => setPagi(Number(e.target.value))}
-            className="mt-2 w-full h-2 bg-zinc-200 rounded-lg appearance-none cursor-pointer accent-indigo-600 dark:bg-zinc-700"
+            className="mt-2 w-full h-2 bg-zinc-200 rounded-lg appearance-none cursor-pointer accent-blue-600 dark:bg-zinc-700"
           />
           <div className="flex justify-between text-[10px] text-zinc-400 px-0.5 mt-0.5">
             <span>1</span>
@@ -223,6 +224,7 @@ export function EnergyCheckin({ onSaved }: EnergyCheckinProps) {
             step="1"
             value={siang}
             disabled={loading}
+            aria-label="Energi Siang (skala 1 sampai 5)"
             onChange={(e) => setSiang(Number(e.target.value))}
             className="mt-2 w-full h-2 bg-zinc-200 rounded-lg appearance-none cursor-pointer accent-amber-500 dark:bg-zinc-700"
           />
@@ -252,6 +254,7 @@ export function EnergyCheckin({ onSaved }: EnergyCheckinProps) {
             step="1"
             value={malam}
             disabled={loading}
+            aria-label="Energi Malam (skala 1 sampai 5)"
             onChange={(e) => setMalam(Number(e.target.value))}
             className="mt-2 w-full h-2 bg-zinc-200 rounded-lg appearance-none cursor-pointer accent-blue-600 dark:bg-zinc-700"
           />
@@ -279,7 +282,7 @@ export function EnergyCheckin({ onSaved }: EnergyCheckinProps) {
                 onClick={() => setMood(item.id)}
                 className={`inline-flex items-center gap-1 rounded-xl px-2.5 py-1 text-xs font-medium transition-all ${
                   isSelected
-                    ? 'bg-indigo-600 text-white shadow-sm ring-2 ring-indigo-300 dark:ring-indigo-700 font-semibold'
+                    ? 'bg-blue-600 text-white shadow-sm ring-2 ring-blue-300 dark:ring-blue-700 font-semibold'
                     : 'border border-zinc-200 bg-zinc-50 text-zinc-700 hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700/60'
                 }`}
               >

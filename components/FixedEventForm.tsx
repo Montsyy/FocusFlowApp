@@ -221,7 +221,7 @@ export function FixedEventForm({
               value={judul}
               onChange={(e) => setJudul(e.target.value)}
               placeholder="Contoh: Kuliah Kecerdasan Buatan"
-              className="mt-1 w-full rounded-xl border border-zinc-300 bg-white px-3.5 py-2 text-sm text-zinc-900 focus:border-indigo-500 focus:outline-none dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
+              className="mt-1 w-full rounded-xl border border-zinc-300 bg-white px-3.5 py-2 text-sm text-zinc-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
             />
           </div>
 
@@ -233,7 +233,7 @@ export function FixedEventForm({
               <select
                 value={hari}
                 onChange={(e) => setHari(parseInt(e.target.value, 10))}
-                className="mt-1 w-full rounded-xl border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 focus:border-indigo-500 focus:outline-none dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
+                className="mt-1 w-full rounded-xl border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
               >
                 <option value={1}>Senin</option>
                 <option value={2}>Selasa</option>
@@ -254,7 +254,7 @@ export function FixedEventForm({
                 required
                 value={jamMulai}
                 onChange={(e) => setJamMulai(e.target.value)}
-                className="mt-1 w-full rounded-xl border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 focus:border-indigo-500 focus:outline-none dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
+                className="mt-1 w-full rounded-xl border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
               />
             </div>
 
@@ -267,7 +267,7 @@ export function FixedEventForm({
                 required
                 value={jamSelesai}
                 onChange={(e) => setJamSelesai(e.target.value)}
-                className="mt-1 w-full rounded-xl border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 focus:border-indigo-500 focus:outline-none dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
+                className="mt-1 w-full rounded-xl border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
               />
             </div>
           </div>
@@ -285,7 +285,7 @@ export function FixedEventForm({
             <button
               type="submit"
               disabled={saving}
-              className="rounded-xl bg-indigo-600 px-5 py-2 text-xs font-semibold text-white shadow-md shadow-indigo-500/20 hover:bg-indigo-500 disabled:opacity-50"
+              className="rounded-xl bg-blue-600 px-5 py-2 text-xs font-semibold text-white shadow-md shadow-blue-500/20 hover:bg-blue-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 disabled:opacity-50"
             >
               {saving
                 ? 'Menyimpan...'
@@ -305,9 +305,15 @@ export function FixedEventForm({
         {loading ? (
           <p className="text-xs text-zinc-400 py-6 text-center">Memuat jadwal...</p>
         ) : sortedEvents.length === 0 ? (
-          <p className="text-xs text-zinc-400 py-6 text-center">
-            Belum ada jadwal tetap terdaftar.
-          </p>
+          <div className="py-8 text-center flex flex-col items-center justify-center">
+            <span className="text-3xl mb-2">📌</span>
+            <p className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">
+              Belum ada jadwal tetap terdaftar
+            </p>
+            <p className="mt-1 text-[11px] text-zinc-500 dark:text-zinc-400 max-w-xs">
+              Tambahkan jadwal kuliah, praktikum, atau rutinitas wajib mingguan agar AI tidak menaruh sesi fokus di jam-jam tersebut.
+            </p>
+          </div>
         ) : (
           <div className="flex flex-col gap-2">
             {sortedEvents.map((ev) => (
@@ -316,7 +322,7 @@ export function FixedEventForm({
                 className="flex items-center justify-between rounded-xl border border-zinc-100 bg-zinc-50/60 p-3 text-xs dark:border-zinc-800 dark:bg-zinc-800/40"
               >
                 <div className="flex items-center gap-3">
-                  <span className="w-16 font-bold text-indigo-600 dark:text-indigo-400">
+                  <span className="w-16 font-bold text-blue-600 dark:text-blue-400">
                     {HARI_NAMES[ev.hari]}
                   </span>
                   <div>
@@ -416,7 +422,7 @@ export function FixedEventForm({
                 type="button"
                 disabled={importingIcs}
                 onClick={handleConfirmImportIcs}
-                className="rounded-xl bg-indigo-600 px-4 py-2 text-xs font-semibold text-white shadow-md shadow-indigo-500/20 hover:bg-indigo-500 disabled:opacity-50"
+                className="rounded-xl bg-blue-600 px-4 py-2 text-xs font-semibold text-white shadow-md shadow-blue-500/20 hover:bg-blue-500 disabled:opacity-50"
               >
                 {importingIcs ? 'Menyimpan...' : 'Simpan Semua Jadwal'}
               </button>

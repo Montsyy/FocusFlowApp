@@ -48,6 +48,7 @@ interface PlannerContextValue {
   capacity: CapacityInfo | null
   setScheduleBlocks: React.Dispatch<React.SetStateAction<ScheduleBlock[]>>
   setUnplacedTasks: React.Dispatch<React.SetStateAction<UnplacedTask[]>>
+  setCapacity: React.Dispatch<React.SetStateAction<CapacityInfo | null>>
   generateSchedule: (
     options?: GenerateScheduleOptions
   ) => Promise<GenerateScheduleResult | null>
@@ -59,17 +60,21 @@ const PlannerContext = createContext<PlannerContextValue | null>(null)
 interface PlannerProviderProps {
   children: ReactNode
   initialBlocks?: ScheduleBlock[]
+  initialUnplaced?: UnplacedTask[]
+  initialCapacity?: CapacityInfo | null
 }
 
 export function PlannerProvider({
   children,
   initialBlocks = [],
+  initialUnplaced = [],
+  initialCapacity = null,
 }: PlannerProviderProps) {
   const { showToast } = useToast()
   const [isGenerating, setIsGenerating] = useState(false)
   const [scheduleBlocks, setScheduleBlocks] = useState<ScheduleBlock[]>(initialBlocks)
-  const [unplacedTasks, setUnplacedTasks] = useState<UnplacedTask[]>([])
-  const [capacity, setCapacity] = useState<CapacityInfo | null>(null)
+  const [unplacedTasks, setUnplacedTasks] = useState<UnplacedTask[]>(initialUnplaced)
+  const [capacity, setCapacity] = useState<CapacityInfo | null>(initialCapacity)
 
   const generateSchedule = useCallback(
     async (options: GenerateScheduleOptions = {}) => {
@@ -174,6 +179,7 @@ export function PlannerProvider({
         capacity,
         setScheduleBlocks,
         setUnplacedTasks,
+        setCapacity,
         generateSchedule,
         replanToday,
       }}
@@ -193,6 +199,7 @@ export function usePlanner() {
       capacity: null,
       setScheduleBlocks: () => {},
       setUnplacedTasks: () => {},
+      setCapacity: () => {},
       generateSchedule: async () => null,
       replanToday: async () => null,
     }

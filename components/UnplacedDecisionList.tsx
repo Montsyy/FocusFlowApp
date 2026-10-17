@@ -115,6 +115,20 @@ export function UnplacedDecisionList({
       })
   }
 
+  if (unplaced.length === 0) {
+    return (
+      <div className="rounded-xl border border-dashed border-emerald-200 bg-emerald-50/50 p-4 text-center dark:border-emerald-900/40 dark:bg-emerald-950/20">
+        <span className="text-xl">🎉</span>
+        <p className="mt-1 text-xs font-bold text-emerald-900 dark:text-emerald-200">
+          Semua Tugas Terjadwal dengan Baik!
+        </p>
+        <p className="mt-0.5 text-[11px] text-emerald-700/80 dark:text-emerald-300/80">
+          Kapasitas mingguanmu mencukupi dan tidak ada tugas yang terabaikan.
+        </p>
+      </div>
+    )
+  }
+
   return (
     <div className="flex flex-col gap-3">
       <div className="flex flex-col gap-2.5">
@@ -191,7 +205,7 @@ export function UnplacedDecisionList({
                   type="button"
                   disabled={isLoading}
                   onClick={() => void handleSplitTask(task)}
-                  className="inline-flex items-center gap-1 rounded-lg border border-indigo-200 bg-indigo-50/80 px-2.5 py-1 text-xs font-semibold text-indigo-700 hover:bg-indigo-100 disabled:opacity-50 dark:border-indigo-900/50 dark:bg-indigo-950/60 dark:text-indigo-300 dark:hover:bg-indigo-900/80 transition-all"
+                  className="inline-flex items-center gap-1 rounded-lg border border-blue-200 bg-blue-50/80 px-2.5 py-1 text-xs font-semibold text-blue-700 hover:bg-blue-100 disabled:opacity-50 dark:border-blue-900/50 dark:bg-blue-950/60 dark:text-blue-300 dark:hover:bg-blue-900/80 transition-all"
                   title="Aktifkan pembagian tugas menjadi sesi-sesi lebih pendek"
                 >
                   <span>✂️</span>
@@ -253,7 +267,7 @@ export function UnplacedDecisionList({
               <button
                 type="button"
                 onClick={() => handleCopyHelpTemplate(helpModalTask)}
-                className="inline-flex items-center gap-1.5 rounded-xl bg-indigo-600 px-3.5 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-indigo-500 transition-all"
+                className="inline-flex items-center gap-1.5 rounded-xl bg-blue-600 px-3.5 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-blue-500 transition-all"
               >
                 <span>📋</span>
                 <span>Salin Pesan</span>

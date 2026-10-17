@@ -38,7 +38,7 @@ export function QuickActions({
               currentMinggu: targetMinggu,
             })
           }
-          className="group relative flex w-full items-center justify-center gap-2 overflow-hidden rounded-xl bg-gradient-to-r from-indigo-600 via-indigo-700 to-blue-600 p-3 text-xs font-bold text-white shadow-md transition-all hover:opacity-95 hover:shadow-lg disabled:opacity-60 disabled:cursor-not-allowed"
+          className="group relative flex w-full items-center justify-center gap-2 overflow-hidden rounded-xl bg-gradient-to-r from-blue-600 via-blue-700 to-sky-600 p-3 text-xs font-bold text-white shadow-md transition-all hover:opacity-95 hover:shadow-lg disabled:opacity-60 disabled:cursor-not-allowed"
         >
           {isGenerating ? (
             <>
@@ -77,7 +77,7 @@ export function QuickActions({
 
         <Link
           href={`/dashboard/kalender?minggu=${targetMinggu}`}
-          className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-indigo-100 bg-indigo-50/70 px-3 py-2 text-xs font-semibold text-indigo-700 hover:bg-indigo-100 dark:border-indigo-900/40 dark:bg-indigo-950/40 dark:text-indigo-300 dark:hover:bg-indigo-950/70 transition-all"
+          className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-blue-100 bg-blue-50/70 px-3 py-2 text-xs font-semibold text-blue-700 hover:bg-blue-100 dark:border-blue-900/40 dark:bg-blue-950/40 dark:text-blue-300 dark:hover:bg-blue-950/70 transition-all"
         >
           <span>📅</span>
           <span>Buka Kalender Penuh</span>

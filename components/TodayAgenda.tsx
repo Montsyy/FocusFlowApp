@@ -65,7 +65,7 @@ export function TodayAgenda({
 
         <div className="flex items-center gap-2">
           {todayBlocks.length > 0 && (
-            <span className="rounded-full bg-indigo-50 px-2.5 py-0.5 text-[11px] font-semibold text-indigo-700 dark:bg-indigo-950/70 dark:text-indigo-300">
+            <span className="rounded-full bg-blue-50 px-2.5 py-0.5 text-[11px] font-semibold text-blue-700 dark:bg-blue-950/70 dark:text-blue-300">
               {completedCount}/{todayBlocks.length} Selesai
             </span>
           )}
@@ -84,13 +84,17 @@ export function TodayAgenda({
       </div>
 
       {todayBlocks.length === 0 ? (
-        <div className="py-6 text-center">
-          <p className="text-xs text-zinc-500 dark:text-zinc-400">
+        <div className="py-8 text-center flex flex-col items-center justify-center">
+          <span className="text-3xl mb-2">☕</span>
+          <p className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">
             Belum ada blok fokus terjadwal untuk hari ini.
+          </p>
+          <p className="mt-1 text-[11px] text-zinc-500 dark:text-zinc-400 max-w-xs">
+            Hari ini bebas dari beban belajar. Nikmati waktu istirahat atau susun jadwal baru untuk mengisi slot waktu luang.
           </p>
           <Link
             href={`/dashboard/kalender?minggu=${currentMinggu}`}
-            className="mt-2.5 inline-flex items-center gap-1 text-xs font-semibold text-indigo-600 hover:text-indigo-500 dark:text-indigo-400"
+            className="mt-3 inline-flex items-center gap-1.5 rounded-xl bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white shadow-xs hover:bg-blue-500 transition-all"
           >
             <span>Buka kalender penuh</span>
             <span>→</span>

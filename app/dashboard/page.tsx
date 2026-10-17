@@ -1,7 +1,9 @@
 import { Suspense } from 'react'
 import DashboardContent from './DashboardContent'
 
-export default function DashboardPage() {
+export default function DashboardPage(props: {
+  searchParams?: Promise<{ minggu?: string }>
+}) {
   return (
     <Suspense
       fallback={
@@ -12,7 +14,7 @@ export default function DashboardPage() {
         </div>
       }
     >
-      <DashboardContent />
+      <DashboardContent searchParams={props.searchParams} />
     </Suspense>
   )
 }

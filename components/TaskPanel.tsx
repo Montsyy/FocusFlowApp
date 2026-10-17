@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import type { Task } from '@/lib/types'
+import { TaskListSkeleton } from './LoadingSkeleton'
 
 interface TaskPanelProps {
   tasks: Task[]
@@ -74,14 +75,14 @@ export function TaskPanel({
             <h2 className="text-base font-bold text-zinc-900 dark:text-zinc-50">
               Daftar Tugas
             </h2>
-            <span className="rounded-full bg-indigo-50 px-2.5 py-0.5 text-xs font-semibold text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300">
+            <span className="rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-semibold text-blue-700 dark:bg-blue-950 dark:text-blue-300">
               {tasks.length}
             </span>
           </div>
           <button
             type="button"
             onClick={onAddTask}
-            className="inline-flex items-center gap-1.5 rounded-xl bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-indigo-500 transition-colors"
+            className="inline-flex items-center gap-1.5 rounded-xl bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-blue-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 transition-colors"
           >
             <span>+</span>
             <span>Tambah</span>
@@ -127,21 +128,21 @@ export function TaskPanel({
 
       <div className="flex-1 p-4 overflow-y-auto min-h-[300px]">
         {loading ? (
-          <div className="flex flex-col items-center justify-center h-48 text-zinc-400">
-            <p className="text-xs font-medium">Memuat tugas...</p>
-          </div>
+          <TaskListSkeleton />
         ) : filteredTasks.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-48 text-center text-zinc-500 dark:text-zinc-400">
-            <p className="text-sm font-semibold">Belum ada tugas</p>
-            <p className="mt-1 text-xs text-zinc-400 dark:text-zinc-500 max-w-xs">
-              Mulai atur aktivitas mingguanmu dengan menambahkan tugas pertama.
+          <div className="flex flex-col items-center justify-center py-10 text-center text-zinc-500 dark:text-zinc-400">
+            <span className="text-3xl mb-2">📝</span>
+            <p className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">Belum ada tugas mingguan</p>
+            <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400 max-w-xs leading-relaxed">
+              Mulai atur aktivitas belajarmu dengan menambahkan tugas pertama atau gunakan input cerdas AI di panel atas.
             </p>
             <button
               type="button"
               onClick={onAddTask}
-              className="mt-3 rounded-lg border border-dashed border-zinc-300 px-3 py-1.5 text-xs font-semibold text-zinc-600 hover:border-zinc-400 dark:border-zinc-700 dark:text-zinc-300"
+              className="mt-3.5 inline-flex items-center gap-1.5 rounded-xl border border-dashed border-blue-300 bg-blue-50/50 px-3.5 py-1.5 text-xs font-semibold text-blue-700 hover:border-blue-400 hover:bg-blue-50 dark:border-blue-900/60 dark:bg-blue-950/40 dark:text-blue-300 transition-all"
             >
-              + Tambah Tugas
+              <span>+</span>
+              <span>Tambah Tugas Pertama</span>
             </button>
           </div>
         ) : (
@@ -164,7 +165,8 @@ export function TaskPanel({
                       type="checkbox"
                       checked={isDone}
                       onChange={() => onToggleStatus(task)}
-                      className="mt-1 h-4 w-4 rounded border-zinc-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                      aria-label={`Tandai tugas ${task.judul} sebagai ${isDone ? 'belum selesai' : 'selesai'}`}
+                      className="mt-1 h-4 w-4 rounded border-zinc-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
                     />
 
                     <div className="flex-1 min-w-0">
@@ -194,7 +196,7 @@ export function TaskPanel({
                         )}
 
                         {task.can_split && (
-                          <span className="inline-flex items-center gap-1 rounded bg-indigo-50 px-2 py-0.5 text-indigo-600 dark:bg-indigo-950/60 dark:text-indigo-400">
+                          <span className="inline-flex items-center gap-1 rounded bg-blue-50 px-2 py-0.5 text-blue-600 dark:bg-blue-950/60 dark:text-blue-400">
                             ✂ {task.sesi_disarankan ?? 1} sesi
                           </span>
                         )}

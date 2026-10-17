@@ -245,7 +245,7 @@ export function Calendar({
                 <span
                   className={`text-[11px] font-semibold tracking-wider uppercase ${
                     isToday
-                      ? 'text-indigo-600 font-bold dark:text-indigo-400'
+                      ? 'text-blue-600 font-bold dark:text-blue-400'
                       : 'text-zinc-500 dark:text-zinc-400'
                   }`}
                 >
@@ -254,7 +254,7 @@ export function Calendar({
                 <span
                   className={`mt-0.5 flex h-8 w-8 items-center justify-center text-2xl font-normal transition-colors ${
                     isToday
-                      ? 'rounded-full bg-indigo-600 font-medium text-white shadow-sm'
+                      ? 'rounded-full bg-blue-600 font-medium text-white shadow-sm'
                       : 'text-zinc-900 dark:text-zinc-100'
                   }`}
                 >
@@ -285,9 +285,22 @@ export function Calendar({
           eventContent={(arg) => {
             const timeText = arg.timeText
             const title = arg.event.title
+            const block = arg.event.extendedProps.block as ScheduleBlock | undefined
+            const hasAiReason = Boolean(block?.alasan_ai && block.alasan_ai.trim().length > 0)
+
             return (
               <div className="flex flex-col h-full w-full overflow-hidden p-1 text-[11px] leading-tight select-none cursor-pointer">
-                <span className="font-semibold truncate">{title}</span>
+                <div className="flex items-center justify-between gap-1 overflow-hidden">
+                  <span className="font-semibold truncate">{title}</span>
+                  {hasAiReason && (
+                    <span
+                      title="Memiliki alasan AI"
+                      className="inline-flex shrink-0 items-center rounded bg-white/30 px-1 py-0.2 text-[9px] font-bold text-white shadow-2xs backdrop-blur-xs dark:bg-white/20"
+                    >
+                      ✨ AI
+                    </span>
+                  )}
+                </div>
                 {timeText && <span className="text-[10px] opacity-85 truncate mt-0.5">{timeText}</span>}
               </div>
             )

@@ -75,7 +75,7 @@ export function RealityCheck({
               className={`h-full transition-all duration-500 ${
                 isOverloaded
                   ? 'bg-red-500'
-                  : 'bg-gradient-to-r from-indigo-500 to-emerald-500'
+                  : 'bg-gradient-to-r from-blue-600 to-emerald-500'
               }`}
               style={{ width: `${ratioPercent}%` }}
             />
@@ -117,15 +117,15 @@ export function RealityCheck({
 
   return (
     <div className="rounded-2xl border border-zinc-200 bg-white p-5 sm:p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 flex flex-col gap-5">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-zinc-100 dark:border-zinc-800">
-        <div className="flex items-center gap-2">
-          <span className="text-base">⚖️</span>
-          <div>
+      <div className="flex items-start justify-between gap-3 pb-3 border-b border-zinc-100 dark:border-zinc-800">
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="text-base shrink-0">⚖️</span>
+          <div className="min-w-0">
             <h3 className="text-sm font-bold text-zinc-900 dark:text-zinc-100">
-              Reality Check Mingguan
+              Reality Check
             </h3>
             <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
-              Keseimbangan beban tugas dengan kapasitas jam aktif
+              Kapasitas & beban tugas
             </p>
           </div>
         </div>
@@ -134,7 +134,7 @@ export function RealityCheck({
           type="button"
           disabled={isGenerating}
           onClick={() => void replanToday()}
-          className="inline-flex items-center gap-1.5 self-start sm:self-auto rounded-xl border border-red-200 bg-red-50/80 px-3 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-100 disabled:opacity-50 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-300 transition-all"
+          className="inline-flex items-center gap-1.5 shrink-0 whitespace-nowrap rounded-xl border border-red-200 bg-red-50/80 px-2.5 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-100 disabled:opacity-50 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-300 transition-all"
           title="Susun ulang sisa slot hari ini mulai dari jam sekarang"
         >
           <span>🚨</span>
@@ -157,7 +157,7 @@ export function RealityCheck({
             className={`font-bold ${
               isOverloaded
                 ? 'text-red-700 dark:text-red-300'
-                : 'text-indigo-600 dark:text-indigo-400'
+                : 'text-blue-600 dark:text-blue-400'
             }`}
           >
             {reqHours}j / {availHours}j kapasitas {isOverloaded && `(+${diffHours}j)`}
@@ -169,7 +169,7 @@ export function RealityCheck({
             className={`h-full rounded-full transition-all duration-500 ${
               isOverloaded
                 ? 'bg-gradient-to-r from-amber-500 to-red-500'
-                : 'bg-gradient-to-r from-indigo-500 to-emerald-500'
+                : 'bg-gradient-to-r from-blue-600 to-emerald-500'
             }`}
             style={{ width: `${ratioPercent}%` }}
           />

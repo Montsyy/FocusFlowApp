@@ -72,7 +72,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
                   <Link
                     href={toast.action.href}
                     onClick={() => dismissToast(toast.id)}
-                    className="inline-flex items-center gap-1 rounded-lg bg-indigo-600 px-2.5 py-1 text-xs font-semibold text-white shadow-sm hover:bg-indigo-500 transition-all"
+                    className="inline-flex items-center gap-1 rounded-lg bg-blue-600 px-2.5 py-1 text-xs font-semibold text-white shadow-sm hover:bg-blue-500 transition-all"
                   >
                     <span>{toast.action.label}</span>
                     <span>→</span>
@@ -84,7 +84,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
                       toast.action?.onClick?.()
                       dismissToast(toast.id)
                     }}
-                    className="inline-flex items-center gap-1 rounded-lg bg-indigo-600 px-2.5 py-1 text-xs font-semibold text-white shadow-sm hover:bg-indigo-500 transition-all"
+                    className="inline-flex items-center gap-1 rounded-lg bg-blue-600 px-2.5 py-1 text-xs font-semibold text-white shadow-sm hover:bg-blue-500 transition-all"
                   >
                     <span>{toast.action.label}</span>
                   </button>

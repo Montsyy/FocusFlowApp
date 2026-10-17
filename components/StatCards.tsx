@@ -24,7 +24,7 @@ export function StatCards({ tasks }: StatCardsProps) {
 
       <div className="mt-4">
         <div className="flex items-baseline justify-between">
-          <span className="text-3xl font-black text-indigo-600 dark:text-indigo-400">
+          <span className="text-3xl font-black text-blue-600 dark:text-blue-400">
             {rate}%
           </span>
           <span className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">
@@ -34,7 +34,7 @@ export function StatCards({ tasks }: StatCardsProps) {
 
         <div className="mt-3 h-2.5 w-full overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-800">
           <div
-            className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-emerald-500 transition-all duration-500"
+            className="h-full rounded-full bg-gradient-to-r from-blue-600 to-emerald-500 transition-all duration-500"
             style={{ width: `${rate}%` }}
           />
         </div>
